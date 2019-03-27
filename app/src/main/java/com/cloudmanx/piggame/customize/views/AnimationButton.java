@@ -3,6 +3,7 @@ package com.cloudmanx.piggame.customize.views;
 import android.content.Context;
 import android.support.v7.widget.AppCompatTextView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.animation.Animation;
 import android.view.animation.ScaleAnimation;
@@ -14,6 +15,8 @@ import android.view.animation.ScaleAnimation;
  * @Date: 2019/3/27 下午5:15
  */
 public class AnimationButton extends AppCompatTextView {
+    private static final String TAG = "AnimationButton";
+    private boolean isCancel = false;
     public AnimationButton(Context context) {
         super(context);
     }
@@ -28,15 +31,25 @@ public class AnimationButton extends AppCompatTextView {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (isEnabled()){
-            switch (event.getAction()){
-                case MotionEvent.ACTION_DOWN:
-                    startAnimation(getActionDownAnimation());
-                    break;
-                case MotionEvent.ACTION_CANCEL:
+        switch (event.getAction()){
+            case MotionEvent.ACTION_DOWN:
+                isCancel = false;
+                startAnimation(getActionDownAnimation());
+                Log.e(TAG, "onTouchEvent: down");
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                isCancel = true;
+                startAnimation(getActionUpAnimation());
+                Log.e(TAG, "onTouchEvent: cancel");
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if ( !isCancel && (event.getX() < 0 ||event.getY()<0 || event.getX()>this.getWidth() || event.getY() > this.getHeight())){
                     startAnimation(getActionUpAnimation());
-                    break;
-                case MotionEvent.ACTION_UP:
+                    isCancel = true;
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                if (!isCancel){
                     Animation animation = getActionUpAnimation();
                     animation.setAnimationListener(new Animation.AnimationListener() {
                         @Override
@@ -54,11 +67,11 @@ public class AnimationButton extends AppCompatTextView {
 
                         }
                     });
-                    break;
-            }
-            return true;
+                    startAnimation(animation);
+                }
+                return true;
         }
-        return false;
+        return super.onTouchEvent(event);
     }
 
     private Animation getActionDownAnimation(){
