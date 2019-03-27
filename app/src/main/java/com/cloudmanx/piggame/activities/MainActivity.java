@@ -1,15 +1,19 @@
 package com.cloudmanx.piggame.activities;
 
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-
 import com.cloudmanx.piggame.R;
+import com.cloudmanx.piggame.customize.views.HomeView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
+
+    private HomeView mHomeView;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    protected int getLayoutId() {
+        return R.layout.activity_main;
+    }
+
+    @Override
+    protected void initView() {
+        mHomeView = findViewById(R.id.home_view);
     }
 }
