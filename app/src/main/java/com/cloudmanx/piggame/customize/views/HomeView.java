@@ -33,7 +33,7 @@ public class HomeView extends RelativeLayout {
 
     private void init(){
 
-        LayoutInflater.from(getContext()).inflate(R.layout.view_home,this,false);
+        LayoutInflater.from(getContext()).inflate(R.layout.view_home,this,true);
     }
 
 
