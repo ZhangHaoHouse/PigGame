@@ -34,12 +34,39 @@ public class HomeView extends RelativeLayout {
     private void init(){
 
         LayoutInflater.from(getContext()).inflate(R.layout.view_home,this,true);
+        OnClickListener onClickListener = v -> {
+            if (mOnButtonClickListener != null) {
+                switch (v.getId()) {
+                    case R.id.fix_pigsty_mode_btn:
+                        mOnButtonClickListener.onPigstyModeButtonClicked();
+                        break;
+                    case R.id.classic_mode_btn:
+                        mOnButtonClickListener.onClassicModeButtonClicked();
+                        break;
+                    case R.id.exit_btn:
+                        mOnButtonClickListener.onExitButtonClicked();
+                        break;
+                    case R.id.sound_btn:
+                        v.setBackgroundResource((isMute = mOnButtonClickListener.onSoundButtonClicked()) ? R.mipmap.ic_mute : R.mipmap.ic_sound);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        };
+        findViewById(R.id.fix_pigsty_mode_btn).setOnClickListener(onClickListener);
+        findViewById(R.id.classic_mode_btn).setOnClickListener(onClickListener);
+        findViewById(R.id.exit_btn).setOnClickListener(onClickListener);
+        findViewById(R.id.sound_btn).setOnClickListener(onClickListener);
     }
 
+    public void setOnButtonClickListener(OnButtonClickListener onButtonClickListener) {
+        mOnButtonClickListener = onButtonClickListener;
+    }
 
     public interface OnButtonClickListener{
         void onPigstyModeButtonClicked();
-        void inClassicModeButtonClicked();
+        void onClassicModeButtonClicked();
         boolean onSoundButtonClicked();
         void onExitButtonClicked();
     }

@@ -6,6 +6,10 @@
     android:layout_height="match_parent"
     tools:context=".activities.MainActivity"
     android:id="@+id/root_view">
+    <com.cloudmanx.piggame.customize.views.LoadingView
+        android:id="@+id/loading_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 
     <com.cloudmanx.piggame.customize.views.HomeView
         android:id="@+id/home_view"

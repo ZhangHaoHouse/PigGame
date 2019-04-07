@@ -3,11 +3,10 @@ package com.cloudmanx.piggame.customize;
 /**
  * @version 1.0
  * @Description:
- * @Author: zhanghao
- * @Date: 2019/3/27 下午4:07
+ * @Author: zhh
+ * @Date: 2019/4/7 22:18
  */
-public class Pig {
-
+public class MyDrawable {
     public void setX(float x){};
     public void setY(float y){};
 }
