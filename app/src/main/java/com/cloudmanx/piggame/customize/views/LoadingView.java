@@ -117,7 +117,7 @@ public class LoadingView extends SurfaceView implements Runnable {
                         progress  =1F - progress;
                     }
                     mCurrentRadius = (int) (mMaxRadius * progress);
-                    doDraw();
+//                    doDraw();
                 }).setOnAnimatorEndListener(finishListener).start();
     }
 
