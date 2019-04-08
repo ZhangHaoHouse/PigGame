@@ -14,6 +14,8 @@ import android.widget.ImageView;
 import com.cloudmanx.piggame.R;
 import com.cloudmanx.piggame.customize.MyLayoutParams;
 import com.cloudmanx.piggame.models.WayData;
+import com.cloudmanx.piggame.utils.ThreadPool;
+import com.cloudmanx.piggame.utils.ValueAnimatorUtil;
 
 import java.util.Random;
 import java.util.concurrent.Future;
@@ -111,7 +113,14 @@ public class RandomPiggies extends ViewGroup {
                     v.setTranslationX(lp.isLeft ? v.getWidth() + v.getTranslationX() + lp.x : -(getWidth() + v.getWidth()) + v.getWidth() + v.getTranslationX() + lp.x);
                     ViewPropertyAnimator animator =v.animate();
                     float oldSpeed = (float) (getWidth() + v.getWidth()) / ((long) v.getTag(R.id.current_duration));
-//                    float distance = Math.abs(lp.isLeft ? (getWidth() + v.getWidth() : -(getWidth() + v.getWidth())))
+                    float distance = Math.abs(lp.isLeft ? (getWidth() + v.getWidth()) - v.getTranslationX() : -(getWidth() + v.getWidth())-v.getTranslationX());
+                    float newDuration = distance/oldSpeed;
+                    animator.translationX(lp.isLeft ? getWidth() + v.getWidth() :-(getWidth() + v.getWidth()))
+                            .setDuration((long)newDuration).setListener(new AnimatorListener(this,v));
+                    imageView.setTag(R.id.current_duration,animator.getDuration());
+                    imageView.setTag(animator);
+                    ValueAnimatorUtil.resetDutationScale();
+                    animator.start();
                     break;
             }
             return true;
@@ -119,8 +128,82 @@ public class RandomPiggies extends ViewGroup {
     }
 
     @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        measureChildren(widthMeasureSpec,heightMeasureSpec);
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
 
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        for (int i = 0; i<getChildCount();i++){
+            View view = getChildAt(i);
+            MyLayoutParams lp = (MyLayoutParams) view.getLayoutParams();
+            if (lp.isDrag){
+                view.layout(lp.x,lp.y,lp.x+lp.width,lp.y+lp.height);
+            }else {
+                view.layout(lp.isLeft?-lp.width:getWidth(),lp.y,lp.isLeft?0:getWidth()+lp.width,lp.y+lp.height);
+            }
+        }
+    }
+
+    public void startShow(){
+        if (mTask != null){
+            stopShow();
+        }
+        mTask = ThreadPool.getInstance().excute(()->{
+            isNeed = true;
+            while (isNeed){
+                post(()->{
+                    ImageView imageView = new ImageView(getContext());
+                    MyLayoutParams layoutParams = new MyLayoutParams(0,0);
+                    boolean isLeft = mRandom.nextBoolean();
+                    float scale = mRandom.nextFloat() + .5f;
+                    if (scale>1){
+                        scale = 1;
+                    }
+                    imageView.setImageResource(isLeft?R.drawable.anim_run_right2:R.drawable.anim_run_left2);
+                    AnimationDrawable drawable = (AnimationDrawable) imageView.getDrawable();
+                    drawable.start();
+                    if (mRunWidth == 0){
+                        mRunWidth = drawable.getIntrinsicWidth();
+                    }
+                    layoutParams.width = (int)(drawable.getIntrinsicWidth() * scale);
+                    layoutParams.height = (int)(drawable.getIntrinsicHeight() * scale);
+                    if (getHeight() <=0){
+                        stopShow();
+                        return;
+                    }
+                    layoutParams.y = mRandom.nextInt(getHeight()-drawable.getIntrinsicHeight());
+                    layoutParams.isLeft = isLeft;
+                    layoutParams.scale = scale;
+                    imageView.setLayoutParams(layoutParams);
+                    addView(imageView);
+                    imageView.setOnTouchListener(mOnTouchListener);
+
+                    ViewPropertyAnimator animator = imageView.animate();
+                    animator.translationX(isLeft ? getWidth() + layoutParams.width : -(getWidth() + layoutParams.width))
+                            .setDuration(1250 + mRandom.nextInt(2750)).setListener(new AnimatorListener(this,imageView));
+                    imageView.setTag(R.id.current_duration,animator.getDuration());
+                    imageView.setTag(animator);
+                    ValueAnimatorUtil.resetDutationScale();
+                    animator.start();
+                });
+                try {
+                    Thread.sleep(300 + mRandom.nextInt(1700));
+                }catch (InterruptedException e){
+                    e.printStackTrace();
+                    return;
+                }
+            }
+        });
+    }
+
+    public void stopShow(){
+        isNeed =false;
+        if (mTask != null){
+            mTask.cancel(true);
+            mTask = null;
+        }
     }
 
     private static class AnimatorListener implements Animator.AnimatorListener{

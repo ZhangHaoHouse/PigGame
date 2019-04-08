@@ -5,9 +5,16 @@ import android.util.Log;
 import com.cloudmanx.piggame.R;
 import com.cloudmanx.piggame.customize.views.HomeView;
 import com.cloudmanx.piggame.customize.views.LoadingView;
+import com.cloudmanx.piggame.utils.ThreadPool;
 
 public class MainActivity extends BaseActivity {
     private static final String TAG = "MainActivity";
+
+    public static final int HOME = 0, //主页
+            LEVEL_SELECT = 1,//关卡选择
+            CLASSIC = 2, //经典模式
+            PIGSTY = 3;//修猪圈模式
+    public int mCurrentStatus = HOME;
 
     private HomeView mHomeView;
     private LoadingView mLoadingView;
@@ -47,5 +54,30 @@ public class MainActivity extends BaseActivity {
 
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mCurrentStatus == HOME){
+            mHomeView.startShow();
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (mCurrentStatus == HOME){
+            mHomeView.startShow();
+        }
+    }
+
+    @Override
+    public void finish() {
+        super.finish();
+        ThreadPool.shutdown();
+        mHomeView.release();
+        mHomeView = null;
+        android.os.Process.killProcess(android.os.Process.myPid());
     }
 }

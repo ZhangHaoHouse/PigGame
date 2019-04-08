@@ -60,8 +60,23 @@ public class HomeView extends RelativeLayout {
         findViewById(R.id.sound_btn).setOnClickListener(onClickListener);
     }
 
+    public void startShow(){
+        post(()->((RandomPiggies) findViewById(R.id.random_piggies)).startShow());
+    }
+
+    public void stopShow(){
+        ((RandomPiggies) findViewById(R.id.random_piggies)).stopShow();
+    }
+
     public void setOnButtonClickListener(OnButtonClickListener onButtonClickListener) {
         mOnButtonClickListener = onButtonClickListener;
+    }
+
+    public void release() {
+        stopShow();
+        if (mOnButtonClickListener != null) {
+            mOnButtonClickListener = null;
+        }
     }
 
     public interface OnButtonClickListener{

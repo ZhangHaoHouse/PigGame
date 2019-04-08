@@ -67,8 +67,8 @@
         android:clickable="true"
         android:focusable="true" />
 
-    <!--<com.wuyr.catchpiggy.customize.views.RandomPiggies-->
-        <!--android:id="@+id/random_piggies"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="match_parent" />-->
+    <com.cloudmanx.piggame.customize.views.RandomPiggies
+        android:id="@+id/random_piggies"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 </RelativeLayout>
