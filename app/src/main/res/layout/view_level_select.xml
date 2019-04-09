@@ -11,16 +11,15 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/xhpx_32" />
 
-    <!--<ScrollView-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_marginTop="@dimen/xhpx_32"-->
-        <!--android:overScrollMode="never"-->
-        <!--android:scrollbars="none">-->
-
-        <!--<com.wuyr.catchpiggy.customize.views.LevelSelect-->
-            <!--android:id="@+id/level_select"-->
-            <!--android:layout_width="wrap_content"-->
-            <!--android:layout_height="wrap_content" />-->
-    <!--</ScrollView>-->
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/xhpx_32"
+        android:overScrollMode="never"
+        android:scrollbars="none">
+        <com.cloudmanx.piggame.customize.views.LevelSelect
+            android:id="@+id/level_select"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </ScrollView>
 </LinearLayout>

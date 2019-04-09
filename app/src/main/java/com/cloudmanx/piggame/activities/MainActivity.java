@@ -6,10 +6,12 @@ import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import com.cloudmanx.piggame.PigApplication;
 import com.cloudmanx.piggame.R;
 import com.cloudmanx.piggame.customize.views.HomeView;
 import com.cloudmanx.piggame.customize.views.LevelSelectView;
 import com.cloudmanx.piggame.customize.views.LoadingView;
+import com.cloudmanx.piggame.utils.LevelUtil;
 import com.cloudmanx.piggame.utils.ThreadPool;
 
 public class MainActivity extends BaseActivity {
@@ -115,9 +117,72 @@ public class MainActivity extends BaseActivity {
                 mHomeView.stopShow();
 
                 mLevelSelectView = new LevelSelectView(this);
-
+                mLevelSelectView.setMaxLevelCount(LevelUtil.PIGSTY_MODE_MAX_LEVEL + 1);
+                mLevelSelectView.setValidHeartCount(PigApplication.getPigstyModeCurrentValidHeartCount(this));
+                mLevelSelectView.setValidLevelCount(PigApplication.getCurrentClassicModeLevel(this));
+                mLevelSelectView.setOnLevelSelectedListener(this::startFixPigstyMode);
                 mRootView.addView(mLevelSelectView,0);
             });
         }
+    }
+
+    /**
+     * 开始修猪圈模式
+     */
+    private void startFixPigstyMode(int level) {
+        if (!mLoadingView.isLoading) {
+            mLoadingView.startLoad(() -> {
+                //释放关卡选择view的资源
+                if (mLevelSelectView != null) {
+                    mLevelSelectView.release();
+                    mRootView.removeView(mLevelSelectView);
+                    mLevelSelectView = null;
+                }
+                mCurrentStatus = PIGSTY;
+//                mPigstyMode = new PigstyMode(this);
+//                mPigstyMode.setCurrentLevel(level > LevelUtil.PIGSTY_MODE_MAX_LEVEL ? -1 : level);
+//                mRootView.addView(mPigstyMode, 0);
+            });
+        }
+    }
+
+    /**
+     * 返回主页
+     */
+    public void backToHome() {
+        switch (mCurrentStatus) {
+            case LEVEL_SELECT:
+                if (!mLoadingView.isLoading) {
+                    mLoadingView.startLoad(() -> {
+                        if (mLevelSelectView != null) {
+                            mLevelSelectView.release();
+                            mRootView.removeView(mLevelSelectView);
+                            mLevelSelectView = null;
+                        }
+                        resetHomeState();
+                    });
+                }
+                break;
+//            case PIGSTY:
+//                mPigstyMode.exit(() -> mLoadingView.startLoad(() -> {
+//                    mRootView.removeView(mPigstyMode);
+//                    resetHomeState();
+//                }));
+//                break;
+//            case CLASSIC:
+//                mClassicMode.exit(() -> mLoadingView.startLoad(() -> {
+//                    mRootView.removeView(mClassicMode);
+//                    resetHomeState();
+//                }));
+//                break;
+//            default:
+//                break;
+        }
+    }
+
+    private void resetHomeState() {
+        mCurrentStatus = HOME;
+        mHomeView.setVisibility(View.VISIBLE);
+        mHomeView.startShow();
     }
 }
