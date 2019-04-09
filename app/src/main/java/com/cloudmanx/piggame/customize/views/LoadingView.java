@@ -27,7 +27,7 @@ public class LoadingView extends SurfaceView implements Runnable {
     private int mCenterX,mCenterY,mMaxRadius,mCurrentRadius;
     private Paint mPaint;
     private SurfaceHolder mSurfaceHolder;
-    private boolean isOpen,isLoading,isProcessing;
+    public boolean isOpen,isLoading,isProcessing;
 
     public LoadingView(Context context) {
         this(context,null);
