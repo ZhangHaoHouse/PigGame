@@ -80,7 +80,16 @@ public class HeartView extends ViewGroup {
 
     public void release(){
         if (mItems !=null){
-
+            for (ImageView imageView :mItems){
+                if (imageView != null){
+                    imageView.setImageDrawable(null);
+                }
+            }
+            mItems = null;
         }
+        mHeartFill.release();
+        mHeartStroke.release();
+        mHeartFill = null;
+        mHeartStroke = null;
     }
 }
