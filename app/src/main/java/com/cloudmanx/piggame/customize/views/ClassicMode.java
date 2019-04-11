@@ -8,14 +8,20 @@ import android.graphics.RectF;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.BitmapDrawable;
 import android.support.annotation.DrawableRes;
+import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.ScaleAnimation;
+import android.view.animation.TranslateAnimation;
 import android.widget.ImageView;
 
 import com.cloudmanx.piggame.R;
 import com.cloudmanx.piggame.customize.MyLayoutParams;
+import com.cloudmanx.piggame.models.WayData2;
 import com.cloudmanx.piggame.utils.BitmapUtil;
 import com.cloudmanx.piggame.utils.LevelUtil;
 
@@ -115,7 +121,62 @@ public class ClassicMode extends ViewGroup {
     }
 
     public void refresh(){
+        isGameOver = false;
+        if (isAnimationPlaying) {
+            return;
+        }
+        mHistory.clear();
+        clearAllSelected();
+        mHorizontalPos = mHorizontalCount / 2;
+        mVerticalPos = mVerticalCount / 2;
+        mItems[mVerticalPos][mHorizontalPos].setStatus(Item.STATE_OCCUPIED);
+        mItemStatus[mVerticalPos][mHorizontalPos] = Item.STATE_OCCUPIED;
+        requestLayout();
+    }
 
+    //释放资源
+    public void release() {
+        if (mItems != null) {
+            for (int vertical = 0; vertical < mVerticalCount; vertical++) {
+                for (int horizontal = 0; horizontal < mHorizontalCount; horizontal++) {
+                    if (mItems[vertical][horizontal] != null) {
+                        mItems[vertical][horizontal].release();
+                    }
+                }
+            }
+            mItems = null;
+        }
+        mItemStatus = null;
+        mHistory = null;
+        mDropTouchView = null;
+        mDropTouchListener = null;
+        mSelectedView = null;
+        mOccupiedView = null;
+        mDropView = null;
+        mRandom = null;
+        mGoLeftAnimationDrawable = null;
+        mGoRightAnimationDrawable = null;
+        mDropLeftAnimationDrawable = null;
+        mDropRightAnimationDrawable = null;
+        mOnGameOverListener = null;
+    }
+
+    /**
+     重置全部选择状态下的格子
+     */
+    private void clearAllSelected() {
+        for (int vertical = 0; vertical < mVerticalCount; vertical++) {
+            for (int horizontal = 0; horizontal < mHorizontalCount; horizontal++) {
+                mItems[vertical][horizontal].setStatus(Item.STATE_UNSELECTED);
+                mItemStatus[vertical][horizontal] = Item.STATE_UNSELECTED;
+            }
+        }
+    }
+
+    //游戏结束,不接受触摸事件
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        return isGameOver;
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -189,8 +250,10 @@ public class ClassicMode extends ViewGroup {
             if (isAnimationPlaying){
                 return;
             }
-            isAnimationPlaying = true;
+//            isAnimationPlaying = true;
             mDropTouchView.setOnTouchListener(null);
+            mItemStatus[verticalPos][horizontalPos] =Item.STATE_SELECTED;
+            mSelectedView.startAnimation(getFenceAnimation(mItems[verticalPos][horizontalPos]));
         }));
     }
 
@@ -238,9 +301,26 @@ public class ClassicMode extends ViewGroup {
             }
         }else {
             //重新检测是否被木头围住了
-//            WayData2 left =
-
-
+            WayData2 left = computeLeft();
+            WayData2 leftTop = computeLeftTop();
+            WayData2 leftBottom = computeLeftBottom();
+            WayData2 right = computeRight();
+            WayData2 rightTop = computeRightTop();
+            WayData2 rightBottom = computeRightBottom();
+            if (left.isBlock && left.count < 2
+                    && right.isBlock && right.count < 2
+                    && leftTop.isBlock && leftTop.count < 2
+                    && leftBottom.isBlock && leftBottom.count < 2
+                    && rightTop.isBlock && rightTop.count < 2
+                    && rightBottom.isBlock && rightBottom.count < 2) {
+                isGameOver = true;
+                if (mOnGameOverListener != null) {
+                    isAnimationPlaying = false;
+                    mDropTouchView.setOnTouchListener(mDropTouchListener);
+                    mDropTouchView.setEnabled(true);
+                    mOnGameOverListener.onWin();
+                }
+            }
         }
 
 
@@ -357,11 +437,11 @@ public class ClassicMode extends ViewGroup {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int currentWidth;
         int currentHeight;
-        //定们格子
+        //定位格子
         for (int vertical = 0;vertical < mVerticalCount;vertical++){
             currentHeight = (mItemSize *vertical) + (mItemSpacing / 2*vertical);
             for (int horizontal = 0; horizontal < mHorizontalCount;horizontal ++){
-                currentWidth = (mItemSize * horizontal) + (vertical % 2==0 ? mItemSize /2:0) + (mItemSize * horizontal);
+                currentWidth = (mItemSize * horizontal) + (vertical % 2==0 ? mItemSize /2:0) + (mItemSpacing * horizontal);
                 mItems[vertical][horizontal].layout(currentWidth,currentHeight+mDropView.getLayoutParams().height,
                         currentHeight+mItemSize,currentHeight+mDropView.getLayoutParams().height+mItemSize);
             }
@@ -405,7 +485,150 @@ public class ClassicMode extends ViewGroup {
         void onLost();
     }
 
-    private interface ComputeDrection{
+    /**
+     下面这些都是计算6个方向的信息(空闲格子数, 这条线上是否有障碍, 格子上的坐标)
+     */
+    private WayData2 computeLeft(){
+        return computeDirection((count,isSameGroup,tmp)->{
+            int posV = mVerticalPos;
+            int posH = mHorizontalPos - count;
+            if (posV <0 || posV>mVerticalCount -1
+                    ||posH <0 ||posH>mHorizontalCount-1)
+                return null;
+            return mItems[mVerticalPos][mHorizontalPos - count];
+        });
+    }
+
+    private WayData2 computeLeftTop() {
+        return computeDirection((count,isSameGroup,tmp)->{
+            int posV = mVerticalPos - count;
+            int posH = mOffset == 0 || isSameGroup ? mHorizontalPos - (tmp - 1) : mHorizontalPos - (tmp - 1) - 1;
+            if (posV <0 || posV>mVerticalCount -1
+                    ||posH <0 ||posH>mHorizontalCount-1)
+                return null;
+            return mItems[mVerticalPos][mHorizontalPos - count];
+        });
+    }
+
+    private WayData2 computeLeftBottom() {
+        return computeDirection((count,isSameGroup,tmp)->{
+            int posV = mVerticalPos + count;
+            int posH = mOffset == 0 || isSameGroup ? mHorizontalPos - (tmp - 1) : mHorizontalPos - (tmp - 1) - 1;
+            if (posV <0 || posV>mVerticalCount -1
+                    ||posH <0 ||posH>mHorizontalCount-1)
+                return null;
+            return mItems[mVerticalPos][mHorizontalPos - count];
+        });
+    }
+
+    private WayData2 computeRight() {
+        return computeDirection((count,isSameGroup,tmp)->{
+            int posV = mVerticalPos;
+            int posH = mHorizontalPos + count;
+            if (posV <0 || posV>mVerticalCount -1
+                    ||posH <0 ||posH>mHorizontalCount-1)
+                return null;
+            return mItems[mVerticalPos][mHorizontalPos - count];
+        });
+    }
+
+    private WayData2 computeRightTop() {
+        return computeDirection((count,isSameGroup,tmp)->{
+            int posV = mVerticalPos - count;
+            int posH = isSameGroup ? (mHorizontalPos + (tmp)) - 1 : mOffset == 0 ? (mHorizontalPos + (tmp - 1)) + 1 : mHorizontalPos + (tmp - 1);
+            if (posV <0 || posV>mVerticalCount -1
+                    ||posH <0 ||posH>mHorizontalCount-1)
+                return null;
+            return mItems[mVerticalPos][mHorizontalPos - count];
+        });
+    }
+
+    private WayData2 computeRightBottom() {
+        return computeDirection((count,isSameGroup,tmp)->{
+            int posV = mVerticalPos + count;
+            int posH = isSameGroup ? (mHorizontalPos + (tmp)) - 1 : mOffset == 0 ? (mHorizontalPos + (tmp - 1)) + 1 : mHorizontalPos + (tmp - 1);
+            if (posV <0 || posV>mVerticalCount -1
+                    ||posH <0 ||posH>mHorizontalCount-1)
+                return null;
+            return mItems[mVerticalPos][mHorizontalPos - count];
+        });
+    }
+
+    private WayData2 computeDirection(@NonNull ComputeDirection computer){
+        Item item = null;
+        int count = 0;
+        boolean isBlock = false;
+        int tmp = 0;
+        boolean isSameGroup;
+        while (count <= mVerticalCount){
+            isSameGroup = count%2 == 0;
+            if (isSameGroup){
+                tmp++;
+            }
+            item = computer.getItem(count,isSameGroup,tmp);
+            if (item == null)
+                break;
+            if (item.getStatus() == Item.STATE_SELECTED){
+                isBlock = true;
+                break;
+            }
+            count++;
+        }
+        return new WayData2(item,count,isBlock);
+    }
+
+    /**
+     木头出现时候的动画
+     */
+    public Animation getFenceAnimation(final Item selectedItem) {
+        selectedItem.startAnimation(getItemTouchAnimation());
+        AnimationSet animationSet = new AnimationSet(false);
+        animationSet.addAnimation(new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF, .5F, Animation.RELATIVE_TO_SELF, .7F));
+        TranslateAnimation translateAnimation = new TranslateAnimation(selectedItem.getLeft(), selectedItem.getLeft(),
+                selectedItem.getBottom() - mSelectedView.getHeight(), selectedItem.getBottom() - mSelectedView.getHeight());
+        animationSet.setDuration(300);
+        animationSet.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                mSelectedView.setVisibility(VISIBLE);
+                selectedItem.hideSelectedImage();
+                selectedItem.setStatus(Item.STATE_SELECTED);
+                computeWay();
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                mSelectedView.setVisibility(INVISIBLE);
+                selectedItem.showSelectedImage();
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+            }
+        });
+        animationSet.addAnimation(translateAnimation);
+        return animationSet;
+    }
+
+    /**
+     格子触摸时的动画
+     */
+    public Animation getItemTouchAnimation() {
+        ScaleAnimation scaleAnimation = new ScaleAnimation(1, .7F, 1, .7F, Animation.RELATIVE_TO_SELF, .5F, Animation.RELATIVE_TO_SELF, .5F);
+        scaleAnimation.setDuration(130);
+        scaleAnimation.setRepeatCount(1);
+        scaleAnimation.setRepeatMode(Animation.REVERSE);
+        return scaleAnimation;
+    }
+
+    /**
+     计算小猪下一步应该走哪一个格子
+     */
+    private void computeWay(){
+
+    }
+
+    private interface ComputeDirection{
         Item getItem(int count,boolean isSameGroup,int tmp);
     }
     public interface OnPiggyDraggedListener{

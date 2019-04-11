@@ -1,5 +1,6 @@
 package com.cloudmanx.piggame.customize.views;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -94,6 +95,7 @@ public class Item extends View {
         mGuideBitmap = bitmap;
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (mCurrentStatus == STATE_EMPTY){
