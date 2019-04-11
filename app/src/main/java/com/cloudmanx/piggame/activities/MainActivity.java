@@ -8,6 +8,7 @@ import android.widget.FrameLayout;
 
 import com.cloudmanx.piggame.PigApplication;
 import com.cloudmanx.piggame.R;
+import com.cloudmanx.piggame.customize.views.ClassicModeView;
 import com.cloudmanx.piggame.customize.views.HomeView;
 import com.cloudmanx.piggame.customize.views.LevelSelectView;
 import com.cloudmanx.piggame.customize.views.LoadingView;
@@ -27,6 +28,7 @@ public class MainActivity extends BaseActivity {
     private HomeView mHomeView;
     private LoadingView mLoadingView;
     LevelSelectView mLevelSelectView;
+    private ClassicModeView mClassicMode;
 
     private AlertDialog mExitDialog;
     private MediaPlayer mPlayer;
@@ -52,7 +54,7 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onClassicModeButtonClicked() {
-
+                showClassicModeLevelSelectView();
             }
 
             @Override
@@ -127,6 +129,28 @@ public class MainActivity extends BaseActivity {
     }
 
     /**
+     * 经典模式 关卡选择
+     */
+    private void showClassicModeLevelSelectView() {
+        if (!mLoadingView.isLoading) {
+            //播放圆圈动画
+            mLoadingView.startLoad(() -> {
+                mCurrentStatus = LEVEL_SELECT;
+                //隐藏主页view
+                mHomeView.setVisibility(View.GONE);
+                mHomeView.stopShow();
+                //初始化关卡选择数据
+                mLevelSelectView = new LevelSelectView(this);
+                mLevelSelectView.setMaxLevelCount(LevelUtil.CLASSIC_MODE_MAX_LEVEL + 1);
+                mLevelSelectView.setValidHeartCount(PigApplication.getClassicModeCurrentValidHeartCount(this));
+                mLevelSelectView.setValidLevelCount(PigApplication.getCurrentClassicModeLevel(this));
+                mLevelSelectView.setOnLevelSelectedListener(this::startClassicMode);
+                mRootView.addView(mLevelSelectView, 0);
+            });
+        }
+    }
+
+    /**
      * 开始修猪圈模式
      */
     private void startFixPigstyMode(int level) {
@@ -142,6 +166,26 @@ public class MainActivity extends BaseActivity {
 //                mPigstyMode = new PigstyMode(this);
 //                mPigstyMode.setCurrentLevel(level > LevelUtil.PIGSTY_MODE_MAX_LEVEL ? -1 : level);
 //                mRootView.addView(mPigstyMode, 0);
+            });
+        }
+    }
+
+    /**
+     * 开始经典模式
+     */
+    private void startClassicMode(int level) {
+        if (!mLoadingView.isLoading) {
+            mLoadingView.startLoad(() -> {
+                //释放关卡选择view的资源
+                if (mLevelSelectView != null) {
+                    mLevelSelectView.release();
+                    mRootView.removeView(mLevelSelectView);
+                    mLevelSelectView = null;
+                }
+                mCurrentStatus = CLASSIC;
+                mClassicMode = new ClassicModeView(this);
+                mClassicMode.setCurrentLevel(level);
+                mRootView.addView(mClassicMode, 0);
             });
         }
     }

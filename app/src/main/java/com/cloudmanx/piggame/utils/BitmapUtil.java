@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.drawable.BitmapDrawable;
 import android.support.annotation.DrawableRes;
 
 /**
@@ -39,5 +41,32 @@ public class BitmapUtil {
         }
         temp.setPixels(targetPixels,0,width,0,0,width,height);
         return temp;
+    }
+
+    public static BitmapDrawable scaleDrawable(BitmapDrawable drawable,int w,int h){
+        Bitmap oldBitmap = drawable.getBitmap();
+        int width = oldBitmap.getWidth();
+        int height = oldBitmap.getHeight();
+        Matrix matrix = new Matrix();
+        float scaleWidth = (float) w/width;
+        float scaleHeight = (float) h/height;
+        matrix.setScale(scaleWidth,scaleHeight);
+        Bitmap newBitmap = Bitmap.createBitmap(oldBitmap,0,0,width,height,matrix,true);
+        return new BitmapDrawable(null,newBitmap);
+    }
+
+    public static BitmapDrawable scaleDrawable(BitmapDrawable drawable,float scale){
+
+        return scaleDrawable(drawable,scale,scale);
+    }
+
+    public static BitmapDrawable scaleDrawable(BitmapDrawable drawable,float wScale,float hScale){
+        Bitmap oldBitmap = drawable.getBitmap();
+        int width = oldBitmap.getWidth();
+        int height = oldBitmap.getHeight();
+        Matrix matrix = new Matrix();
+        matrix.setScale(wScale,hScale);
+        Bitmap newBitmap = Bitmap.createBitmap(oldBitmap,0,0,width,height,matrix,true);
+        return new BitmapDrawable(null,newBitmap);
     }
 }

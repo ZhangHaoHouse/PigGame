@@ -3,8 +3,11 @@ package com.cloudmanx.piggame.customize.views;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.BitmapFactory;
 import android.graphics.RectF;
 import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.BitmapDrawable;
+import android.support.annotation.DrawableRes;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -13,6 +16,7 @@ import android.widget.ImageView;
 
 import com.cloudmanx.piggame.R;
 import com.cloudmanx.piggame.customize.MyLayoutParams;
+import com.cloudmanx.piggame.utils.BitmapUtil;
 import com.cloudmanx.piggame.utils.LevelUtil;
 
 import java.util.Random;
@@ -45,7 +49,7 @@ public class ClassicMode extends ViewGroup {
     private Random mRandom;
 
     //小猪各种状态下的动画
-    private AnimationDrawable mGoLeftAnimationDrawabel,mGoRightAnimationDrawable,
+    private AnimationDrawable mGoLeftAnimationDrawable,mGoRightAnimationDrawable,
             mDropLeftAnimationDrawable, mDropRightAnimationDrawable;
     private OnGameOverListener mOnGameOverListener;
     private OnPiggyDraggedListener mOnPiggyDraggedListener;
@@ -168,11 +172,26 @@ public class ClassicMode extends ViewGroup {
                     mLastX = x;
                     mLastY = y;
                     layoutParams.isDrag = false;
-
+                    locationOccupiedView(mDropView.getLeft() + (mLastItemIsLeft ? ((mDropView.getWidth()/2) + (mDropView.getWidth()/4)):
+                    mDropView.getWidth() - ((mDropView.getWidth()/2)+(mDropView.getWidth()/4))),(float)(mDropView.getTop() + (mDropView.getHeight()*.8)));
+                    if (isDragEnable && mOnPiggyDraggedListener != null){
+                        mOnPiggyDraggedListener.onDragged();
+                        isDragEnable = false;
+                    }
                     break;
             }
             return true;
         };
+
+        //初始化棋盘状态和格子的实例
+        initChildrenViews(((horizontalPos, verticalPos) -> {
+            //格子按下的监听
+            if (isAnimationPlaying){
+                return;
+            }
+            isAnimationPlaying = true;
+            mDropTouchView.setOnTouchListener(null);
+        }));
     }
 
     private void locationOccupiedView(float x,float y){
@@ -220,7 +239,95 @@ public class ClassicMode extends ViewGroup {
         }else {
             //重新检测是否被木头围住了
 //            WayData2 left =
+
+
         }
+
+
+    }
+
+
+    /*
+    * 初始化棋盘状态和格子的实例
+    **/
+    private void initChildrenViews(Item.OnItemPressedListener onItemPressedListener){
+        BitmapDrawable unselectedDrawable = getResBitmapDrawable(R.mipmap.ic_unselected);
+        BitmapDrawable selectedDrawable = getResBitmapDrawable(R.mipmap.ic_selected);
+        BitmapDrawable occupiedDrawableLeft = getResBitmapDrawable(R.mipmap.ic_occupied_left_0);
+        BitmapDrawable occupiedDrawableRight = getResBitmapDrawable(R.mipmap.ic_occupied_right_0);
+        BitmapDrawable guideDrawable = getResBitmapDrawable(R.mipmap.ic_guide);
+
+        for (int vertical = 0;vertical < mVerticalCount;vertical++){
+            for (int horizontal = 0;horizontal < mHorizontalCount; horizontal++){
+                Item tmp = new Item(getContext());
+                tmp.setPadding(mItemPadding,mItemPadding,mItemPadding,mItemPadding);
+                tmp.setOnItemPressedListener(onItemPressedListener);
+                tmp.setPositions(horizontal,vertical);
+                tmp.setUnSelectedBitmap(unselectedDrawable.getBitmap());
+                tmp.setSelectedBitmap(selectedDrawable.getBitmap());
+                tmp.setOccupiedBitmapLeft(occupiedDrawableLeft.getBitmap());
+                tmp.setOccupiedBitmapRight(occupiedDrawableRight.getBitmap());
+                tmp.setGuideBitmap(guideDrawable.getBitmap());
+                mItems[vertical][horizontal] = tmp;
+                addView(tmp);
+            }
+        }
+
+        mSelectedView = new ImageView(getContext());
+        mSelectedView.setAdjustViewBounds(true);
+
+        mSelectedView.setImageResource(R.drawable.anim_drop_left);
+        mDropLeftAnimationDrawable = (AnimationDrawable) mSelectedView.getDrawable();
+
+        mSelectedView.setImageResource(R.drawable.anim_drop_right);
+        mDropRightAnimationDrawable = (AnimationDrawable) mSelectedView.getDrawable();
+
+        mSelectedView.setImageResource(R.drawable.anim_run_left);
+        mGoLeftAnimationDrawable = (AnimationDrawable) mSelectedView.getDrawable();
+
+        mSelectedView.setImageResource(R.drawable.anim_run_right);
+        mGoRightAnimationDrawable = (AnimationDrawable) mSelectedView.getDrawable();
+
+        mSelectedView.setVisibility(INVISIBLE);
+        LayoutParams lp = new LayoutParams(selectedDrawable.getBitmap().getWidth(), selectedDrawable.getBitmap().getHeight());
+        mSelectedView.setLayoutParams(lp);
+        mSelectedView.setImageDrawable(selectedDrawable);
+        addView(mSelectedView);
+
+        mOccupiedView = new ImageView(getContext());
+        mOccupiedView.setAdjustViewBounds(true);
+        mOccupiedView.setScaleType(ImageView.ScaleType.FIT_XY);
+        LayoutParams lp2 = new LayoutParams(occupiedDrawableLeft.getBitmap().getWidth(), occupiedDrawableLeft.getBitmap().getHeight());
+        mOccupiedView.setLayoutParams(lp2);
+        mOccupiedView.setVisibility(INVISIBLE);
+        addView(mOccupiedView);
+
+        mDropView = new ImageView(getContext());
+        mDropView.setAdjustViewBounds(true);
+        mDropView.setScaleType(ImageView.ScaleType.FIT_XY);
+        float occupiedScale = getOccupiedScale(new BitmapDrawable(getResources(),
+                BitmapFactory.decodeResource(getResources(), R.mipmap.ic_unselected)));
+        MyLayoutParams lp3 = new MyLayoutParams((int) (mDropLeftAnimationDrawable.getIntrinsicWidth() * occupiedScale),
+                (int) (mDropLeftAnimationDrawable.getIntrinsicHeight() * occupiedScale));
+        mDropView.setLayoutParams(lp3);
+        mDropView.setVisibility(INVISIBLE);
+        addView(mDropView);
+
+        mDropTouchView = new View(getContext());
+        mDropTouchView.setLayoutParams(lp);
+        mDropTouchView.setOnTouchListener(mDropTouchListener);
+        addView(mDropTouchView);
+    }
+
+
+    private BitmapDrawable getResBitmapDrawable(@DrawableRes int res){
+        BitmapDrawable drawable = new BitmapDrawable(getResources(),BitmapFactory.decodeResource(getResources(),res));
+        float scale = getOccupiedScale(drawable);
+        return BitmapUtil.scaleDrawable(drawable,scale);
+    }
+
+    private float getOccupiedScale(BitmapDrawable occupiedDrawableRight){
+        return (float) mItemSize / occupiedDrawableRight.getBitmap().getWidth();
     }
 
     /**
@@ -241,8 +348,56 @@ public class ClassicMode extends ViewGroup {
     }
 
     @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        measureChildren(widthMeasureSpec,heightMeasureSpec);
+        setMeasuredDimension(widthMeasureSpec,heightMeasureSpec + mDropLeftAnimationDrawable.getIntrinsicHeight());
+    }
 
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        int currentWidth;
+        int currentHeight;
+        //定们格子
+        for (int vertical = 0;vertical < mVerticalCount;vertical++){
+            currentHeight = (mItemSize *vertical) + (mItemSpacing / 2*vertical);
+            for (int horizontal = 0; horizontal < mHorizontalCount;horizontal ++){
+                currentWidth = (mItemSize * horizontal) + (vertical % 2==0 ? mItemSize /2:0) + (mItemSize * horizontal);
+                mItems[vertical][horizontal].layout(currentWidth,currentHeight+mDropView.getLayoutParams().height,
+                        currentHeight+mItemSize,currentHeight+mDropView.getLayoutParams().height+mItemSize);
+            }
+        }
+
+        mSelectedView.layout(0,0,mSelectedView.getLayoutParams().width,mSelectedView.getLayoutParams().height);
+        mOccupiedView.layout(0, 0, mOccupiedView.getLayoutParams().width, mOccupiedView.getLayoutParams().height);
+        mDropTouchView.layout(0, (int) ((mDropTouchView.getLayoutParams().height) - (mDropTouchView.getLayoutParams().height * .8)),
+                mDropTouchView.getLayoutParams().width, (int) (mDropTouchView.getLayoutParams().height * .8));
+        layoutDropTouchView(mItems[mVerticalPos][mHorizontalPos]);
+        layoutDropView(mItems[mVerticalPos][mHorizontalPos]);
+    }
+
+    private void layoutDropTouchView(Item item) {
+        mDropTouchView.layout(item.getLeft(), item.getTop() - ((int) (mDropTouchView.getHeight() / .8) - item.getHeight()), item.getLeft() + mDropTouchView.getWidth(),
+                item.getTop() + mDropTouchView.getHeight() - ((int) (mDropTouchView.getHeight() / .8) - item.getHeight()));
+    }
+
+    private void layoutDropView(Item item) {
+        MyLayoutParams layoutParams = (MyLayoutParams) mDropView.getLayoutParams();
+        if (layoutParams.isDrag) {
+            mDropView.layout(mDropView.getLeft() + layoutParams.x, mDropView.getTop() + layoutParams.y,
+                    mDropView.getRight() + layoutParams.x, mDropView.getBottom() + layoutParams.y);
+        } else {
+            mDropView.layout(0, 0, mDropView.getLayoutParams().width, mDropView.getLayoutParams().height);
+            mDropView.layout((int) item.getX() - (mDropView.getWidth() - item.getWidth()),
+                    item.getBottom() - mDropView.getHeight(), (int) item.getX() + mDropView.getWidth(), item.getBottom());
+        }
+    }
+
+    public void setOnOverListener(OnGameOverListener listener) {
+        mOnGameOverListener = listener;
+    }
+
+    public void setOnPiggyDraggedListener(OnPiggyDraggedListener listener) {
+        mOnPiggyDraggedListener = listener;
     }
 
     public interface OnGameOverListener{
