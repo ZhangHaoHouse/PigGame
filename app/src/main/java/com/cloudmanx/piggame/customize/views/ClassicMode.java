@@ -21,10 +21,15 @@ import android.widget.ImageView;
 
 import com.cloudmanx.piggame.R;
 import com.cloudmanx.piggame.customize.MyLayoutParams;
+import com.cloudmanx.piggame.models.PositionData;
+import com.cloudmanx.piggame.models.WayData;
 import com.cloudmanx.piggame.models.WayData2;
 import com.cloudmanx.piggame.utils.BitmapUtil;
 import com.cloudmanx.piggame.utils.LevelUtil;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.Stack;
 
@@ -250,8 +255,9 @@ public class ClassicMode extends ViewGroup {
             if (isAnimationPlaying){
                 return;
             }
-//            isAnimationPlaying = true;
+            isAnimationPlaying = true;
             mDropTouchView.setOnTouchListener(null);
+            mHistory.push(copyItemStatus());
             mItemStatus[verticalPos][horizontalPos] =Item.STATE_SELECTED;
             mSelectedView.startAnimation(getFenceAnimation(mItems[verticalPos][horizontalPos]));
         }));
@@ -337,12 +343,12 @@ public class ClassicMode extends ViewGroup {
         BitmapDrawable occupiedDrawableRight = getResBitmapDrawable(R.mipmap.ic_occupied_right_0);
         BitmapDrawable guideDrawable = getResBitmapDrawable(R.mipmap.ic_guide);
 
-        for (int vertical = 0;vertical < mVerticalCount;vertical++){
-            for (int horizontal = 0;horizontal < mHorizontalCount; horizontal++){
+        for (int vertical = 0; vertical < mVerticalCount; vertical++) {
+            for (int horizontal = 0; horizontal < mHorizontalCount; horizontal++) {
                 Item tmp = new Item(getContext());
-                tmp.setPadding(mItemPadding,mItemPadding,mItemPadding,mItemPadding);
+                tmp.setPadding(mItemPadding, mItemPadding, mItemPadding, mItemPadding);
                 tmp.setOnItemPressedListener(onItemPressedListener);
-                tmp.setPositions(horizontal,vertical);
+                tmp.setPositions(horizontal, vertical);
                 tmp.setUnSelectedBitmap(unselectedDrawable.getBitmap());
                 tmp.setSelectedBitmap(selectedDrawable.getBitmap());
                 tmp.setOccupiedBitmapLeft(occupiedDrawableLeft.getBitmap());
@@ -429,8 +435,13 @@ public class ClassicMode extends ViewGroup {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        measureChildren(widthMeasureSpec,heightMeasureSpec);
-        setMeasuredDimension(widthMeasureSpec,heightMeasureSpec + mDropLeftAnimationDrawable.getIntrinsicHeight());
+        measureChildren(widthMeasureSpec, heightMeasureSpec);
+        setMeasuredDimension(widthMeasureSpec, heightMeasureSpec + mDropLeftAnimationDrawable.getIntrinsicHeight());
+    }
+
+    @Override
+    protected MyLayoutParams generateDefaultLayoutParams() {
+        return new MyLayoutParams(0, 0);
     }
 
     @Override
@@ -443,7 +454,7 @@ public class ClassicMode extends ViewGroup {
             for (int horizontal = 0; horizontal < mHorizontalCount;horizontal ++){
                 currentWidth = (mItemSize * horizontal) + (vertical % 2==0 ? mItemSize /2:0) + (mItemSpacing * horizontal);
                 mItems[vertical][horizontal].layout(currentWidth,currentHeight+mDropView.getLayoutParams().height,
-                        currentHeight+mItemSize,currentHeight+mDropView.getLayoutParams().height+mItemSize);
+                        currentWidth+mItemSize,currentHeight+mDropView.getLayoutParams().height+mItemSize);
             }
         }
 
@@ -483,6 +494,17 @@ public class ClassicMode extends ViewGroup {
     public interface OnGameOverListener{
         void onWin();
         void onLost();
+    }
+
+    /**
+     复制格子状态数组
+     */
+    private int[][] copyItemStatus() {
+        int[][] result = new int[mVerticalCount][mHorizontalCount];
+        for (int vertical = 0; vertical < mVerticalCount; vertical++) {
+            System.arraycopy(mItemStatus[vertical], 0, result[vertical], 0, mHorizontalCount);
+        }
+        return result;
     }
 
     /**
@@ -625,7 +647,249 @@ public class ClassicMode extends ViewGroup {
      计算小猪下一步应该走哪一个格子
      */
     private void computeWay(){
+        mOffset = mVerticalPos % 2 == 0 ? 0 :1;
+        int offset2 = mVerticalPos % 2 == 0 ? 1:0;
+        List<WayData> ways = new ArrayList<>();//这个用来保存6个方向的信息(空闲格子数, 这条线上是否有障碍, 格子上的坐标)
 
+        //left
+        WayData2 left = computeLeft();
+        if (left.item != null) {
+            ways.add(new WayData(left.count, left.isBlock, mHorizontalPos - 1, mVerticalPos));
+        }
+
+        //leftTop
+        WayData2 leftTop = computeLeftTop();
+        if (leftTop.item != null) {
+            ways.add(new WayData(leftTop.count, leftTop.isBlock, mHorizontalPos - mOffset, mVerticalPos - 1));
+        }
+
+        //leftBottom
+        WayData2 leftBottom = computeLeftBottom();
+        if (leftBottom.item != null) {
+            ways.add(new WayData(leftBottom.count, leftBottom.isBlock, mHorizontalPos - mOffset, mVerticalPos + 1));
+        }
+
+        //right
+        WayData2 right = computeRight();
+        if (right.item != null) {
+            ways.add(new WayData(right.count, right.isBlock, mHorizontalPos + 1, mVerticalPos));
+        }
+
+        //rightTop
+        WayData2 rightTop = computeRightTop();
+        if (rightTop.item != null) {
+            ways.add(new WayData(rightTop.count, rightTop.isBlock, mHorizontalPos + offset2, mVerticalPos - 1));
+        }
+
+        //rightBottom
+        WayData2 rightBottom = computeRightBottom();
+        if (rightBottom.item != null) {
+            ways.add(new WayData(rightBottom.count, rightBottom.isBlock, mHorizontalPos + offset2, mVerticalPos + 1));
+        }
+        //重新排序一下, 以空闲格子数,从小到大排序
+        Collections.sort(ways, (o1, o2) -> (o1.count < o2.count) ? -1 : ((o1.count == o2.count) ? 0 : 1));
+        //如果上下左右,左上,左下,右上,右下,这6个方向的空闲格子数都是<2,则判定游戏结束
+        if (left.isBlock && left.count < 2
+                && right.isBlock && right.count < 2
+                && leftTop.isBlock && leftTop.count < 2
+                && leftBottom.isBlock && leftBottom.count < 2
+                && rightTop.isBlock && rightTop.count < 2
+                && rightBottom.isBlock && rightBottom.count < 2) {
+            isGameOver = true;
+            if (mOnGameOverListener != null) {
+                isAnimationPlaying = false;
+                mDropTouchView.setOnTouchListener(mDropTouchListener);
+                mDropTouchView.setEnabled(true);
+                mOnGameOverListener.onWin();
+            }
+            return;
+        }
+        WayData nextPos = null;
+        try {
+            //找出路
+            nextPos = ComputeWayUtil.findWay(mCurrentLevel, mItemStatus, new WayData(mHorizontalPos, mVerticalPos), ways);
+            //没找到出路,则处于一个封闭的圈子里面
+            if (nextPos == null) {
+                //在6个方向里面,随机找一个空闲的格子当作下一步要走的位置
+                while (true) {
+                    nextPos = ways.get(mRandom.nextInt(ways.size()));
+                    if (mItemStatus[nextPos.y][nextPos.x] != Item.STATE_SELECTED) {
+                        break;
+                    }
+                }
+            }
+            findExit(nextPos);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            //如果数组越界,则判定小猪已经走出了棋盘范围,游戏结束
+            isAnimationPlaying = true;
+            mDropTouchView.setOnTouchListener(null);
+            isGameOver = true;
+            if (mOnGameOverListener != null) {
+                if (nextPos != null) {
+                    startRunAnimation(nextPos);
+                }
+            }
+        }
+    }
+
+    /**
+     处理找出口的逻辑
+     */
+    private void findExit(WayData tmp) {
+        mItemStatus[mVerticalPos][mHorizontalPos] = Item.STATE_UNSELECTED;
+        mItemStatus[tmp.y][tmp.x] = Item.STATE_OCCUPIED;
+
+        Item newItem = mItems[tmp.y][tmp.x];
+        Item oldItem = mItems[mVerticalPos][mHorizontalPos];
+        oldItem.hideOccupiedImage();
+
+        boolean isLeft = isLeft(tmp.x);
+        mOccupiedView.setImageDrawable(isLeft ? mGoLeftAnimationDrawable : mGoRightAnimationDrawable);
+        mOccupiedView.startAnimation(getWalkAnimation(oldItem, newItem, isLeft));
+        mVerticalPos = tmp.y;
+        mHorizontalPos = tmp.x;
+    }
+
+    /**
+     小猪走路的动画
+     */
+    private TranslateAnimation getWalkAnimation(final Item oldItem, final Item newItem, final boolean isLeft) {
+        TranslateAnimation animation = new TranslateAnimation(oldItem.getX(), newItem.getX(),
+                oldItem.getBottom() - mOccupiedView.getHeight(), newItem.getBottom() - mOccupiedView.getHeight());
+        animation.setDuration(400);
+        animation.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                mGoLeftAnimationDrawable.start();
+                mGoRightAnimationDrawable.start();
+                mOccupiedView.setVisibility(VISIBLE);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                mOccupiedView.setVisibility(INVISIBLE);
+                mGoLeftAnimationDrawable.stop();
+                mGoRightAnimationDrawable.stop();
+                oldItem.setIsLeft(isLeft);
+                oldItem.setStatus(Item.STATE_UNSELECTED);
+                newItem.setIsLeft(isLeft);
+                newItem.setStatus(Item.STATE_OCCUPIED);
+                requestLayout();
+                isAnimationPlaying = false;
+                mDropTouchView.setOnTouchListener(mDropTouchListener);
+
+                //初始化导航的格子
+                if (isNavigationOn) {
+                    List<WayData> guide = ComputeWayUtil.findWay2(mItemStatus, new WayData(mHorizontalPos, mVerticalPos));
+                    if (guide != null && !guide.isEmpty()) {
+                        guide.remove(0);
+                        for (WayData tmp : guide) {
+                            mItems[tmp.y][tmp.x].setStatus(Item.STATE_GUIDE);
+                        }
+                    }
+                    for (int vertical = 0; vertical < mVerticalCount; vertical++) {
+                        for (int horizontal = 0; horizontal < mHorizontalCount; horizontal++) {
+                            if (mItems[vertical][horizontal].getStatus() == Item.STATE_GUIDE) {
+                                if (guide != null && guide.contains(new WayData(horizontal, vertical))) {
+                                    continue;
+                                }
+                                mItems[vertical][horizontal].setStatus(Item.STATE_UNSELECTED);
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        return animation;
+    }
+
+    /**
+     播放小猪跑掉了的动画
+     */
+    private void startRunAnimation(WayData wayData) {
+        Item item;
+        PositionData positionData = new PositionData();
+        //根据小猪的当前位置来确定动画的起止点
+        if (wayData.x >= mHorizontalCount) {
+            item = mItems[wayData.y][wayData.x - 1];
+            positionData.startX = item.getX();
+            positionData.endX = getHeight() * 2;
+            positionData.endY = positionData.startY = item.getBottom() - mOccupiedView.getHeight();
+        } else if (wayData.x < 0) {
+            item = mItems[wayData.y][0];
+            positionData.startX = item.getX();
+            positionData.endX = -getHeight();
+            positionData.endY = positionData.startY = item.getBottom() - mOccupiedView.getHeight();
+        } else if (wayData.y >= mVerticalCount) {
+            item = mItems[wayData.y - 1][wayData.x];
+            positionData.endX = positionData.startX = item.getX();
+            positionData.startY = item.getBottom() - mOccupiedView.getHeight();
+            positionData.endY = getHeight() * 2;
+        } else {
+            item = mItems[0][wayData.x];
+            positionData.endX = positionData.startX = item.getX();
+            positionData.startY = item.getBottom() - mOccupiedView.getHeight();
+            positionData.endY = -getHeight();
+        }
+        mOccupiedView.startAnimation(getRunAnimation(item, positionData));
+    }
+
+    /**
+     小猪逃跑的动画，动画完成后，弹出游戏结束对话框
+     */
+    public TranslateAnimation getRunAnimation(final Item item, PositionData positionData) {
+        if (positionData.startX < positionData.endX) {
+            mOccupiedView.setImageDrawable(mGoRightAnimationDrawable);
+        } else if (positionData.startX > positionData.endX) {
+            mOccupiedView.setImageDrawable(mGoLeftAnimationDrawable);
+        } else {
+            mOccupiedView.setImageDrawable(item.isLeft() ? mGoLeftAnimationDrawable : mGoRightAnimationDrawable);
+        }
+        TranslateAnimation animation = new TranslateAnimation(
+                positionData.startX, positionData.endX, positionData.startY, positionData.endY);
+        animation.setDuration(600);
+        animation.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                mGoLeftAnimationDrawable.start();
+                mGoRightAnimationDrawable.start();
+                mOccupiedView.setVisibility(VISIBLE);
+                item.setStatus(Item.STATE_UNSELECTED);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                mOccupiedView.setVisibility(INVISIBLE);
+                mGoLeftAnimationDrawable.stop();
+                mGoRightAnimationDrawable.stop();
+                isGameOver = true;
+                mOnGameOverListener.onLost();
+                isAnimationPlaying = false;
+                mDropTouchView.setOnTouchListener(mDropTouchListener);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        return animation;
+    }
+
+    /**
+     判断小猪的方向
+     */
+    private boolean isLeft(int x) {
+        if (x == mHorizontalPos) {
+            return mVerticalPos % 2 == 0;
+        } else {
+            return x < mHorizontalPos;
+        }
     }
 
     private interface ComputeDirection{
