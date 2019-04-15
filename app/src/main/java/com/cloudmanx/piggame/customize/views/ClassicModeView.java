@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.cloudmanx.piggame.PigApplication;
 import com.cloudmanx.piggame.R;
@@ -50,7 +51,7 @@ public class ClassicModeView extends FrameLayout {
         mClassicMode.setOnOverListener(new ClassicMode.OnGameOverListener() {
             @Override
             public void onWin() {
-
+                Toast.makeText(getContext(),"you win",Toast.LENGTH_SHORT);
             }
 
             @Override

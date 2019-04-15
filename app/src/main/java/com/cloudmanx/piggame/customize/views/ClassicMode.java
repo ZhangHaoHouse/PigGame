@@ -21,10 +21,12 @@ import android.widget.ImageView;
 
 import com.cloudmanx.piggame.R;
 import com.cloudmanx.piggame.customize.MyLayoutParams;
+import com.cloudmanx.piggame.models.Position;
 import com.cloudmanx.piggame.models.PositionData;
 import com.cloudmanx.piggame.models.WayData;
 import com.cloudmanx.piggame.models.WayData2;
 import com.cloudmanx.piggame.utils.BitmapUtil;
+import com.cloudmanx.piggame.utils.ComputeWayUtil;
 import com.cloudmanx.piggame.utils.LevelUtil;
 
 import java.util.ArrayList;
@@ -84,7 +86,9 @@ public class ClassicMode extends ViewGroup {
         mItemSize = (int)a.getDimension(R.styleable.ClassicMode_item_size,36);
         mItemSpacing = (int)a.getDimension(R.styleable.ClassicMode_item_spacing,4);
         mVerticalCount = (int)a.getInteger(R.styleable.ClassicMode_item_vertical_count,8);
+        Position.setMaxVPos(mVerticalCount - 1);
         mHorizontalCount = a.getInteger(R.styleable.ClassicMode_item_horizontal_count,8);
+        Position.setMaxHPos(mHorizontalCount - 1);
         if (mItemSpacing == 0){
             mItemPadding = (int) getResources().getDimension(R.dimen.item_spacing);
         }
@@ -517,7 +521,7 @@ public class ClassicMode extends ViewGroup {
             if (posV <0 || posV>mVerticalCount -1
                     ||posH <0 ||posH>mHorizontalCount-1)
                 return null;
-            return mItems[mVerticalPos][mHorizontalPos - count];
+            return mItems[posV][posH];
         });
     }
 
@@ -528,7 +532,7 @@ public class ClassicMode extends ViewGroup {
             if (posV <0 || posV>mVerticalCount -1
                     ||posH <0 ||posH>mHorizontalCount-1)
                 return null;
-            return mItems[mVerticalPos][mHorizontalPos - count];
+            return mItems[posV][posH];
         });
     }
 
@@ -539,7 +543,7 @@ public class ClassicMode extends ViewGroup {
             if (posV <0 || posV>mVerticalCount -1
                     ||posH <0 ||posH>mHorizontalCount-1)
                 return null;
-            return mItems[mVerticalPos][mHorizontalPos - count];
+            return mItems[posV][posH];
         });
     }
 
@@ -550,7 +554,7 @@ public class ClassicMode extends ViewGroup {
             if (posV <0 || posV>mVerticalCount -1
                     ||posH <0 ||posH>mHorizontalCount-1)
                 return null;
-            return mItems[mVerticalPos][mHorizontalPos - count];
+            return mItems[posV][posH];
         });
     }
 
@@ -561,7 +565,7 @@ public class ClassicMode extends ViewGroup {
             if (posV <0 || posV>mVerticalCount -1
                     ||posH <0 ||posH>mHorizontalCount-1)
                 return null;
-            return mItems[mVerticalPos][mHorizontalPos - count];
+            return mItems[posV][posH];
         });
     }
 
@@ -572,7 +576,7 @@ public class ClassicMode extends ViewGroup {
             if (posV <0 || posV>mVerticalCount -1
                     ||posH <0 ||posH>mHorizontalCount-1)
                 return null;
-            return mItems[mVerticalPos][mHorizontalPos - count];
+            return mItems[posV][posH];
         });
     }
 
