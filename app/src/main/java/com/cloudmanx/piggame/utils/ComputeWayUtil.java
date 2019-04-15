@@ -56,49 +56,70 @@ public class ComputeWayUtil {
         int horizontalCount = items[0].length;
         Queue<WayData> way = new ArrayDeque<>();
         List<List<WayData>> footprints = new ArrayList<>();
+        List<WayData> walked = new ArrayList<>();
         int[][] pattern = new int[verticalCount][horizontalCount];
         for (int vertical = 0; vertical < verticalCount; vertical++) {
             System.arraycopy(items[vertical], 0, pattern[vertical], 0, horizontalCount);
         }
-
         way.offer(currentPos);
-        List<WayData> temp = new ArrayList<>();
-        temp.add(currentPos);
-        footprints.add(temp);
-        pattern[currentPos.y][currentPos.x] = STATE_WALKED;
 
-        //广度优先遍历(同上)
-        while (!way.isEmpty()) {
-            WayData header = way.poll();
-            List<WayData> directions = getCanArrivePos(pattern, header);
-            List<List<WayData>> list = new ArrayList<>();
-            for (int i = 0; i < directions.size(); i++) {
-                WayData direction = directions.get(i);
-                for (List<WayData> tmp : footprints) {
-                    if (canLinks(header, tmp)) {
-                        List<WayData> list2 = new ArrayList<>(tmp);
-                        list2.add(direction);
-                        list.add(list2);
-                    }
+        while (!way.isEmpty()){
+            WayData wayData = way.poll();
+            if (wayData == null)
+                break;
+            pattern[wayData.y][wayData.x] = STATE_WALKED;
+            if (wayData.x == 0 || wayData.x == horizontalCount-1 || wayData.y == 0 || wayData.y == verticalCount -1){
+                List<WayData> list = new ArrayList<>();
+                WayData co = wayData;
+                while (co != null){
+                    list.add(0,co);
+                    co = co.preWayData;
                 }
-                if (isEdge(verticalCount, horizontalCount, direction)) {
-                    if (!list.isEmpty()) {
-                        footprints.addAll(list);
-                    }
-
-                    for (List<WayData> list2 : footprints) {
-                        if (!list2.isEmpty() && isEdge2(verticalCount, horizontalCount, list2)) {
-                            return list2;
-                        }
-                    }
-                }
-                way.offer(direction);
-
+                return list;
             }
-            if (!list.isEmpty()) {
-                footprints.addAll(list);
+            List<WayData> temp = getCanArrivePos(pattern,wayData);
+            for(WayData data : temp){
+                data.preWayData = wayData;
+                way.offer(data);
             }
         }
+//        List<WayData> temp = new ArrayList<>();
+//        temp.add(currentPos);
+//        footprints.add(temp);
+//        pattern[currentPos.y][currentPos.x] = STATE_WALKED;
+//
+//        //广度优先遍历(同上)
+//        while (!way.isEmpty()) {
+//            WayData header = way.poll();
+//            List<WayData> directions = getCanArrivePos(pattern, header);
+//            List<List<WayData>> list = new ArrayList<>();
+//            for (int i = 0; i < directions.size(); i++) {
+//                WayData direction = directions.get(i);
+//                for (List<WayData> tmp : footprints) {
+//                    if (canLinks(header, tmp)) {
+//                        List<WayData> list2 = new ArrayList<>(tmp);
+//                        list2.add(direction);
+//                        list.add(list2);
+//                    }
+//                }
+//                if (isEdge(verticalCount, horizontalCount, direction)) {
+//                    if (!list.isEmpty()) {
+//                        footprints.addAll(list);
+//                    }
+//
+//                    for (List<WayData> list2 : footprints) {
+//                        if (!list2.isEmpty() && isEdge2(verticalCount, horizontalCount, list2)) {
+//                            return list2;
+//                        }
+//                    }
+//                }
+//                way.offer(direction);
+//
+//            }
+//            if (!list.isEmpty()) {
+//                footprints.addAll(list);
+//            }
+//        }
         return null;
     }
 
