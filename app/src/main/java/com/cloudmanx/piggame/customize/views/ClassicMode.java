@@ -591,7 +591,9 @@ public class ClassicMode extends ViewGroup {
             if (isSameGroup){
                 tmp++;
             }
-            item = computer.getItem(count,isSameGroup,tmp);
+            Item cache = computer.getItem(count,isSameGroup,tmp);
+            if (cache != null)
+                item = cache;
             if (item == null)
                 break;
             if (item.getStatus() == Item.STATE_SELECTED){
@@ -894,6 +896,10 @@ public class ClassicMode extends ViewGroup {
         } else {
             return x < mHorizontalPos;
         }
+    }
+
+    public int getHistorySize() {
+        return mHistory == null ? 0 : mHistory.size();
     }
 
     private interface ComputeDirection{

@@ -10,11 +10,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.cloudmanx.piggame.PigApplication;
 import com.cloudmanx.piggame.R;
+import com.cloudmanx.piggame.activities.MainActivity;
 import com.cloudmanx.piggame.utils.LevelUtil;
+
+import java.util.Locale;
 
 /**
  * @version 1.0
@@ -51,12 +53,12 @@ public class ClassicModeView extends FrameLayout {
         mClassicMode.setOnOverListener(new ClassicMode.OnGameOverListener() {
             @Override
             public void onWin() {
-                Toast.makeText(getContext(),"you win",Toast.LENGTH_SHORT);
+                showVictoryDialog();
             }
 
             @Override
             public void onLost() {
-
+                showFailureDialog();
             }
         });
         mClassicMode.setOnPiggyDraggedListener(()->findViewById(R.id.drag_btn)
@@ -191,6 +193,93 @@ public class ClassicModeView extends FrameLayout {
         v.setBackgroundResource(R.mipmap.ic_drag_disable);
         v.setEnabled(false);
         ((TextView) v).setText("0");
+    }
+
+    private void showVictoryDialog() {
+        PigApplication.saveCurrentClassicModeLevel(getContext(), mCurrentLevel + 1);
+        initGameResultDialog(false);
+        mGameResultDialog.show();
+    }
+
+    private void showFailureDialog() {
+        initGameResultDialog(true);
+        mGameResultDialog.show();
+    }
+
+    private void initGameResultDialog(boolean isRequestHelp) {
+        String message = isRequestHelp ? getContext().getString(R.string.classic_mode_lose_message_format)
+                : String.format(Locale.getDefault(), getContext().getString(R.string.classic_mode_won_message_format),
+                (SystemClock.uptimeMillis() - mStartTime) / 1000, mClassicMode.getHistorySize());
+        OnClickListener onClickListener = v -> {
+            String shareMessage = String.format(v.getContext().getString(R.string.classic_mode_share_won_format), mCurrentLevel, mClassicMode.getHistorySize());
+            switch (v.getId()) {
+//                case R.id.ic_share_to_wechat:
+//                    ShareUtil.shareToWeChat(v.getContext(), isRequestHelp, shareMessage);
+//                    break;
+//                case R.id.ic_share_to_moments:
+//                    ShareUtil.shareToWeChatMoments(v.getContext(), isRequestHelp, shareMessage);
+//                    break;
+//                case R.id.ic_share_to_qq:
+//                    ShareUtil.shareToQQ(v.getContext(), isRequestHelp, shareMessage);
+//                    break;
+//                case R.id.ic_share_to_qzone:
+//                    ShareUtil.shareToQZone(v.getContext(), isRequestHelp, shareMessage);
+//                    break;
+                case R.id.positive_button:
+                    mGameResultDialog.dismiss();
+                    //如果是赢了,就显示 (重玩,下一关)两个按钮,如果是输了,就显示(菜单,重玩)两个按钮
+                    //重玩和下一关之前都要检查下心够不够
+                    if (isRequestHelp) {
+                        if (checkHeartIsEnough(false)) {
+                            mRefreshButton.performClick();
+                        } else {
+                            showHeartIsEmptyDialog();
+                        }
+                    } else {
+                        if (mCurrentLevel > 0) {
+                            mCurrentLevel++;
+                        }
+                        if (checkHeartIsEnough(false)) {
+                            mRefreshButton.performClick();
+                        } else {
+                            showHeartIsEmptyDialog();
+                        }
+                    }
+                    break;
+                case R.id.negative_button:
+                    if (isRequestHelp) {
+                        ((MainActivity) getContext()).backToHome();
+                    } else {
+                        mGameResultDialog.dismiss();
+                        if (checkHeartIsEnough(false)) {
+                            mRefreshButton.performClick();
+                        } else {
+                            showHeartIsEmptyDialog();
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        };
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_game_over_view, null, false);
+        ((TextView) dialogView.findViewById(R.id.message)).setText(message);
+        ((TextView) dialogView.findViewById(R.id.action_text)).setText(isRequestHelp ? R.string.request_help : R.string.share_achievements);
+        ((TextView) dialogView.findViewById(R.id.positive_button)).setText(isRequestHelp ? R.string.again : R.string.next);
+        ((TextView) dialogView.findViewById(R.id.negative_button)).setText(isRequestHelp ? R.string.menu : R.string.again);
+        dialogView.findViewById(R.id.ic_share_to_wechat).setOnClickListener(onClickListener);
+        dialogView.findViewById(R.id.ic_share_to_moments).setOnClickListener(onClickListener);
+        dialogView.findViewById(R.id.ic_share_to_qq).setOnClickListener(onClickListener);
+        dialogView.findViewById(R.id.ic_share_to_qzone).setOnClickListener(onClickListener);
+        dialogView.findViewById(R.id.positive_button).setOnClickListener(onClickListener);
+        dialogView.findViewById(R.id.negative_button).setOnClickListener(onClickListener);
+        mGameResultDialog = new AlertDialog.Builder(getContext(), R.style.DialogTheme).setView(dialogView).setCancelable(false).create();
+    }
+
+    private void showHeartIsEmptyDialog() {
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_heart_is_empty_view, null, false);
+        dialogView.findViewById(R.id.menu_button).setOnClickListener(v -> ((MainActivity) getContext()).backToHome());
+        mHeartEmptyDialog = new AlertDialog.Builder(getContext(), R.style.DialogTheme).setView(dialogView).setCancelable(false).show();
     }
 
     private boolean checkHeartIsEnough(boolean isUpdateCount) {
