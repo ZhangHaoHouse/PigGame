@@ -653,6 +653,18 @@ public class ClassicMode extends ViewGroup {
      计算小猪下一步应该走哪一个格子
      */
     private void computeWay(){
+
+        if (mHorizontalPos == 0 ||mHorizontalPos == mHorizontalCount -1 || mVerticalPos == 0 || mVerticalPos == mVerticalCount - 1){
+            //如果数组越界,则判定小猪已经走出了棋盘范围,游戏结束
+            isAnimationPlaying = true;
+            mDropTouchView.setOnTouchListener(null);
+            isGameOver = true;
+            if (mOnGameOverListener != null) {
+                startRunAnimation(new WayData(mHorizontalPos,mVerticalPos));
+            }
+            return;
+        }
+
         mOffset = mVerticalPos % 2 == 0 ? 0 :1;
         int offset2 = mVerticalPos % 2 == 0 ? 1:0;
         List<WayData> ways = new ArrayList<>();//这个用来保存6个方向的信息(空闲格子数, 这条线上是否有障碍, 格子上的坐标)
@@ -711,31 +723,20 @@ public class ClassicMode extends ViewGroup {
             return;
         }
         WayData nextPos = null;
-        try {
-            //找出路
-            nextPos = ComputeWayUtil.findWay(mCurrentLevel, mItemStatus, new WayData(mHorizontalPos, mVerticalPos), ways);
-            //没找到出路,则处于一个封闭的圈子里面
-            if (nextPos == null) {
-                //在6个方向里面,随机找一个空闲的格子当作下一步要走的位置
-                while (true) {
-                    nextPos = ways.get(mRandom.nextInt(ways.size()));
-                    if (mItemStatus[nextPos.y][nextPos.x] != Item.STATE_SELECTED) {
-                        break;
-                    }
-                }
-            }
-            findExit(nextPos);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            //如果数组越界,则判定小猪已经走出了棋盘范围,游戏结束
-            isAnimationPlaying = true;
-            mDropTouchView.setOnTouchListener(null);
-            isGameOver = true;
-            if (mOnGameOverListener != null) {
-                if (nextPos != null) {
-                    startRunAnimation(nextPos);
+        //找出路
+        nextPos = ComputeWayUtil.findWay(mCurrentLevel, mItemStatus, new WayData(mHorizontalPos, mVerticalPos), ways);
+        //没找到出路,则处于一个封闭的圈子里面
+        if (nextPos == null) {
+
+            //在6个方向里面,随机找一个空闲的格子当作下一步要走的位置
+            while (true) {
+                nextPos = ways.get(mRandom.nextInt(ways.size()));
+                if (mItemStatus[nextPos.y][nextPos.x] != Item.STATE_SELECTED) {
+                    break;
                 }
             }
         }
+        findExit(nextPos);
     }
 
     /**
