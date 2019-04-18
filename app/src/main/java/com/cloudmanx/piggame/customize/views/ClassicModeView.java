@@ -305,4 +305,54 @@ public class ClassicModeView extends FrameLayout {
         }
         return isEnough;
     }
+
+    public void exit(PigstyMode.OnExitedListener listener) {
+        showExitDialog(listener);
+    }
+
+    private void showExitDialog(PigstyMode.OnExitedListener listener) {
+        if (mGameResultDialog != null && mGameResultDialog.isShowing()) {
+            mGameResultDialog.dismiss();
+            release();
+            listener.onExited();
+        } else if (mHeartEmptyDialog != null && mHeartEmptyDialog.isShowing()) {
+            mHeartEmptyDialog.dismiss();
+            release();
+            listener.onExited();
+        } else {
+            if (mExitDialog == null) {
+                initExitDialog(listener);
+            }
+            if (mExitDialog != null && !mExitDialog.isShowing()) {
+                mExitDialog.show();
+            }
+        }
+    }
+
+    private void initExitDialog(PigstyMode.OnExitedListener listener) {
+        OnClickListener onClickListener = v -> {
+            switch (v.getId()) {
+                case R.id.continue_game_btn:
+                    mExitDialog.dismiss();
+                    break;
+                case R.id.back_to_menu_btn:
+                    mExitDialog.dismiss();
+                    release();
+                    listener.onExited();
+                    break;
+                default:
+                    break;
+            }
+        };
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_exit_view, null, false);
+        dialogView.findViewById(R.id.continue_game_btn).setOnClickListener(onClickListener);
+        dialogView.findViewById(R.id.back_to_menu_btn).setOnClickListener(onClickListener);
+        mExitDialog = new AlertDialog.Builder(getContext(), R.style.DialogTheme).setView(dialogView).create();
+    }
+
+    public void release() {
+        mClassicMode.release();
+        mGameResultDialog = null;
+        mExitDialog = null;
+    }
 }

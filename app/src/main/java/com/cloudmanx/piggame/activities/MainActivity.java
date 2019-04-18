@@ -213,12 +213,12 @@ public class MainActivity extends BaseActivity {
 //                    resetHomeState();
 //                }));
 //                break;
-//            case CLASSIC:
-//                mClassicMode.exit(() -> mLoadingView.startLoad(() -> {
-//                    mRootView.removeView(mClassicMode);
-//                    resetHomeState();
-//                }));
-//                break;
+            case CLASSIC:
+                mClassicMode.exit(() -> mLoadingView.startLoad(() -> {
+                    mRootView.removeView(mClassicMode);
+                    resetHomeState();
+                }));
+                break;
 //            default:
 //                break;
         }
@@ -228,5 +228,35 @@ public class MainActivity extends BaseActivity {
         mCurrentStatus = HOME;
         mHomeView.setVisibility(View.VISIBLE);
         mHomeView.startShow();
+    }
+
+    @Override
+    public void onBackPressed() {
+        switch (mCurrentStatus) {
+            case HOME:
+                showExitDialog();
+                break;
+            case LEVEL_SELECT:
+            case PIGSTY:
+            case CLASSIC:
+                backToHome();
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void showExitDialog() {
+        if (mExitDialog == null) {
+            initExitDialog();
+        }
+        if (!mExitDialog.isShowing()) {
+            mExitDialog.show();
+        }
+    }
+
+    private void initExitDialog() {
+        mExitDialog = new AlertDialog.Builder(this).setMessage(R.string.exit_dialog_message)
+                .setNegativeButton(R.string.no, null).setPositiveButton(R.string.yes, (dialog, which) -> finish()).create();
     }
 }

@@ -2,6 +2,8 @@ package com.cloudmanx.piggame.utils;
 
 import com.cloudmanx.piggame.customize.views.Item;
 
+import java.util.Random;
+
 /**
  * @version 1.0
  * @Description:
@@ -218,6 +220,17 @@ public class LevelUtil {
                 break;
 
             default:
+                int selectedSize = (Math.min(horizontalCount, verticalCount) / 2) + 1;
+                int tmp = 0;
+                Random mRandom = new Random();
+                while (tmp < selectedSize) {
+                    int vertical = mRandom.nextInt(verticalCount);
+                    int horizontal = mRandom.nextInt(horizontalCount);
+                    if ( vertical != verticalCount/2 && horizontal != horizontalCount/2){
+                        data[vertical][horizontal] = Item.STATE_SELECTED;
+                        tmp++;
+                    }
+                }
                 break;
         }
         return data;

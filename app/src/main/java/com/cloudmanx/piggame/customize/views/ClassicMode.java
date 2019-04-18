@@ -111,22 +111,17 @@ public class ClassicMode extends ViewGroup {
         isDragEnable = isNavigationOn = false;
         mCurrentLevel = level;
         refresh();
-        if (mCurrentLevel > 0){
-            //初始化默认的木头
-            int[][] position = LevelUtil.getDefaultFencePosition(mVerticalCount,mHorizontalCount,level);
-            for (int vertical = 0;vertical<mVerticalCount;vertical++){
-                for (int horizontal = 0;horizontal < mHorizontalCount;horizontal++){
-                    if (position[vertical][horizontal] == Item.STATE_SELECTED){
-                        mItemStatus[vertical][horizontal] = Item.STATE_SELECTED;
-                        mItems[vertical][horizontal].setStatus(Item.STATE_SELECTED);
-                    }
+
+        //初始化默认的木头
+        int[][] position = LevelUtil.getDefaultFencePosition(mVerticalCount,mHorizontalCount,level);
+        for (int vertical = 0;vertical<mVerticalCount;vertical++){
+            for (int horizontal = 0;horizontal < mHorizontalCount;horizontal++){
+                if (position[vertical][horizontal] == Item.STATE_SELECTED){
+                    mItemStatus[vertical][horizontal] = Item.STATE_SELECTED;
+                    mItems[vertical][horizontal].setStatus(Item.STATE_SELECTED);
                 }
             }
-        }else {
-            //随机选择木头
-            setRandomSelected();
         }
-
     }
 
     public void refresh(){
@@ -418,23 +413,6 @@ public class ClassicMode extends ViewGroup {
 
     private float getOccupiedScale(BitmapDrawable occupiedDrawableRight){
         return (float) mItemSize / occupiedDrawableRight.getBitmap().getWidth();
-    }
-
-    /**
-     随机木头
-     */
-    private void setRandomSelected() {
-        int selectedSize = (Math.min(mHorizontalCount, mVerticalCount) / 2) + 1;
-        int tmp = 0;
-        while (tmp < selectedSize) {
-            int vertical = mRandom.nextInt(mVerticalCount);
-            int horizontal = mRandom.nextInt(mHorizontalCount);
-            if (mItemStatus[vertical][horizontal] == Item.STATE_UNSELECTED || mItemStatus[vertical][horizontal] == Item.STATE_GUIDE) {
-                mItemStatus[vertical][horizontal] = Item.STATE_SELECTED;
-                mItems[vertical][horizontal].setStatus(Item.STATE_SELECTED);
-                tmp++;
-            }
-        }
     }
 
     @Override
@@ -909,4 +887,6 @@ public class ClassicMode extends ViewGroup {
     public interface OnPiggyDraggedListener{
         void onDragged();
     }
+
+
 }
