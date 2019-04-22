@@ -800,18 +800,18 @@ public class ClassicMode extends ViewGroup {
         Item item;
         PositionData positionData = new PositionData();
         //根据小猪的当前位置来确定动画的起止点
-        if (wayData.x >= mHorizontalCount) {
-            item = mItems[wayData.y][wayData.x - 1];
+        if (wayData.x >= mHorizontalCount -1) {
+            item = mItems[wayData.y][wayData.x];
             positionData.startX = item.getX();
             positionData.endX = getHeight() * 2;
             positionData.endY = positionData.startY = item.getBottom() - mOccupiedView.getHeight();
-        } else if (wayData.x < 0) {
+        } else if (wayData.x <= 0) {
             item = mItems[wayData.y][0];
             positionData.startX = item.getX();
             positionData.endX = -getHeight();
             positionData.endY = positionData.startY = item.getBottom() - mOccupiedView.getHeight();
-        } else if (wayData.y >= mVerticalCount) {
-            item = mItems[wayData.y - 1][wayData.x];
+        } else if (wayData.y >= mVerticalCount-1) {
+            item = mItems[wayData.y][wayData.x];
             positionData.endX = positionData.startX = item.getX();
             positionData.startY = item.getBottom() - mOccupiedView.getHeight();
             positionData.endY = getHeight() * 2;
