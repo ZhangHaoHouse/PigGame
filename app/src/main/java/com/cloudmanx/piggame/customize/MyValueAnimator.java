@@ -43,7 +43,7 @@ public class MyValueAnimator {
             if (isRunOnCurrentThread){
                 startAnimation();
             }else {
-                ThreadPool.getInstance().excute(this::startAnimation);
+                ThreadPool.getInstance().execute(this::startAnimation);
             }
         }
     }

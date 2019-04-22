@@ -91,7 +91,8 @@ public class PigApplication extends Application {
      */
     public static int getPigstyModeCurrentValidHeartCount(Context context) {
         updatePigstyModeValidHeartCount(context);
-        return (int) getSharedPreferences(context).getLong(PIGSTY_MODE_CURRENT_VALID_HEART_COUNT, MAX_HEART_COUNT);
+        return 5;
+//        return (int) getSharedPreferences(context).getLong(PIGSTY_MODE_CURRENT_VALID_HEART_COUNT, MAX_HEART_COUNT);
     }
 
     /**

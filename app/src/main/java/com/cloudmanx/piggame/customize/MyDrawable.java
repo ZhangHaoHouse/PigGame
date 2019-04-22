@@ -45,7 +45,7 @@ public class MyDrawable extends Drawable implements Cloneable {
 
     public void start(){
         stop();
-        mTask = ThreadPool.getInstance().excute(()->{
+        mTask = ThreadPool.getInstance().execute(()->{
             while (true){
                 synchronized (mLock){
                     while (isPaused){

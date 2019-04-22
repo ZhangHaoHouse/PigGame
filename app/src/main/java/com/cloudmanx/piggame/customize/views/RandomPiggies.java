@@ -150,7 +150,7 @@ public class RandomPiggies extends ViewGroup {
         if (mTask != null){
             stopShow();
         }
-        mTask = ThreadPool.getInstance().excute(()->{
+        mTask = ThreadPool.getInstance().execute(()->{
             isNeed = true;
             while (isNeed){
                 post(()->{

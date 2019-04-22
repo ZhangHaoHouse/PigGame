@@ -70,7 +70,7 @@ public class LoadingView extends SurfaceView implements Runnable {
     private void startAnimation(MyValueAnimator.OnAnimatorEndListener finishListener){
         count = 0;
         setVisibility(VISIBLE);
-        ThreadPool.getInstance().excute(this);
+        ThreadPool.getInstance().execute(this);
 //        ValueAnimator.setFrameDelay(5);
 //        ValueAnimator valueAnimator = ValueAnimator.ofFloat(0,1f);
 //        valueAnimator.setDuration(350L);

@@ -7,19 +7,29 @@ import android.graphics.NinePatch;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.os.SystemClock;
 import android.support.v7.app.AlertDialog;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.SparseIntArray;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.widget.TextView;
 
+import com.cloudmanx.piggame.PigApplication;
 import com.cloudmanx.piggame.R;
+import com.cloudmanx.piggame.activities.MainActivity;
 import com.cloudmanx.piggame.customize.MyDrawable;
+import com.cloudmanx.piggame.customize.MyValueAnimator;
 import com.cloudmanx.piggame.customize.Pig;
 import com.cloudmanx.piggame.models.MissionData;
 import com.cloudmanx.piggame.models.WayData;
 import com.cloudmanx.piggame.utils.BitmapUtil;
+import com.cloudmanx.piggame.utils.LevelUtil;
+import com.cloudmanx.piggame.utils.ThreadPool;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -113,6 +123,7 @@ public class PigstyMode extends SurfaceView implements SurfaceHolder.Callback,Ru
 
     public PigstyMode(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        init();
     }
 
     private void init(){
@@ -135,6 +146,9 @@ public class PigstyMode extends SurfaceView implements SurfaceHolder.Callback,Ru
         mFrameBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_frame);
         mFrameBackground = new NinePatch(mFrameBackgroundBitmap, mFrameBackgroundBitmap.getNinePatchChunk(), null);
         mLevelStringFormat = getContext().getString(R.string.level_format);
+        initCar();
+        initPaint();
+        initPiggies();
     }
 
     private void initCar() {
@@ -162,50 +176,123 @@ public class PigstyMode extends SurfaceView implements SurfaceHolder.Callback,Ru
     }
 
     private void initPiggies() {
-//        mPiggies = new Pig[PIGGY_COUNT];
-//        Pig.OnTouchListener onTouchListener = (pig, event, index) -> {
-//            switch (event.getAction() & event.getActionMasked()) {
-//                case MotionEvent.ACTION_DOWN:
-//                case MotionEvent.ACTION_POINTER_DOWN:
-//                    pigActionDown(pig, event, index);
-//                    break;
-//                case MotionEvent.ACTION_MOVE:
-//                    pigActionMove(pig, event, index);
-//                    break;
-//                case MotionEvent.ACTION_CANCEL:
-//                case MotionEvent.ACTION_UP:
-//                case MotionEvent.ACTION_POINTER_UP:
-//                    pigActionUp(pig, false);
-//                    break;
-//                default:
-//                    break;
-//            }
-//        };
-//        //小猪所在的矩形变更(更新位置)
-//        Pig.OnPositionUpdateListener onPositionUpdateListener = (pig, oldPosition, newPosition) -> {
-//            changeItemStatus(oldPosition.y, oldPosition.x, Item.STATE_UNSELECTED);
-//            if (pig.getState() == Pig.STATE_RUNNING) {
-//                //将小猪上一个矩形的状态设为空闲,将新的矩形状态设为小猪占用
-//                changeItemStatus(newPosition.y, newPosition.x, Item.STATE_OCCUPIED);
-//                pig.setPosition(newPosition.y, newPosition.x);
-//                mPiggiesOccupiedPosition[pig.getIndex()] = newPosition;
-//            }
-//        };
-//        //每一个小猪逃跑动画结束后,都检查一次是否满足游戏结束条件
-//        Pig.OnLeavedListener onLeavedListener = this::checkIsGameOver;
-//        float scale = mItemSize / (mItemSize * 1.15F);
-//        //初始化小猪
-//        for (int i = 0; i < PIGGY_COUNT; i++) {
-//            Pig pig = new Pig(getContext(), scale);
-//            pig.setIndex(i);
-//            pig.setOnTouchListener(onTouchListener);
-//            pig.setOnPositionUpdateListener(onPositionUpdateListener, mItemSize);
-//            pig.setOnLeavedListener(onLeavedListener);
-//            mPiggies[i] = pig;
-//        }
+        mPiggies = new Pig[PIGGY_COUNT];
+        Pig.OnTouchListener onTouchListener = ((pig, event, index) -> {
+            switch (event.getAction() & event.getActionMasked()){
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    pigActionMove(pig, event, index);
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_POINTER_UP:
+                    pigActionUp(pig, false);
+                    break;
+                default:
+                    break;
+            }
+        });
     }
 
+    /**
+     * 手指按下小猪(小猪跟随手指移动)
+     */
+    private void pigActionDown(Pig pig, MotionEvent event, int index) {
+    }
 
+    /**
+     * 手指按下小猪移动(播放小猪被拖动的动画)
+     */
+    private void pigActionMove(Pig pig, MotionEvent event, int index) {}
+
+    /**
+     * 手指松开小猪(重新定位小猪位置,并且开始找出路)
+     */
+    private void pigActionUp(Pig pig, boolean isPlayAnimation) {}
+
+    /**
+     * 开始绘制
+     */
+    public void restart() {
+        isStopped = false;
+        if (mStartTime == 0){
+            mStartTime = SystemClock.uptimeMillis();
+        }
+        if (mItems == null){
+//            initItems();
+        }
+//        if (mPropOffsetHelper == null) {
+//            initPropOffsetHelper();
+//        }
+        mWidth = getWidth();
+        mHeight = getHeight();
+//        mTop = getHeight() - mPropOffsetHelper.getPropHeight();
+//        mLeftOffset = (mPropSize - mPropOffsetHelper.getPropWidth()) / 2;
+        isDrawing = true;
+        mDrawTask = ThreadPool.getInstance().execute(this);
+        if (isFirstInit) {
+            playInitAnimation();
+        } else {
+            if (!isGameOver) {
+                startGenerate();
+            }
+        }
+    }
+
+    /**
+     * 小车开过的动画
+     */
+    private void playInitAnimation() {
+        isPiggyByCar = true;
+        mCarHead.setX(mWidth + mCarHead.getIntrinsicWidth());
+        float y = mHeight / 2 - mCarHead.getIntrinsicHeight();
+        mCarHead.setY(y);
+        MyValueAnimator.create(mWidth, -(mCarHead.getIntrinsicWidth() * 2 + mCarBody.getIntrinsicWidth() * 6), y, y, mCarHead)
+                .setDuration(10000).setOnAnimatorMiddleListener(() -> {
+            isPiggyByCar = false;
+            startGenerate();
+        }).start();
+        isFirstInit = false;
+    }
+
+    private void startGenerate() {
+        isNeed = true;
+        startGenerateProp();
+//        mPropOffsetHelper.startComputeOffset();
+    }
+
+    private void startGenerateProp() {
+//        mPropGenerateTask = ThreadPool.getInstance().execute(() -> {
+//            while (isNeed) {
+//                if (mPropOffsetHelper == null) {
+//                    return;
+//                }
+//                synchronized (PROP_GENERATE_TASK_LOCK) {
+//                    //当前未离队的树头数量达到指定值,则暂停生成
+//                    while (mPropOffsetHelper.getQueueSize() >= MAX_PROP_SIZE) {
+//                        try {
+//                            LogUtil.print("线程暂停");
+//                            PROP_GENERATE_TASK_LOCK.wait();
+//                        } catch (InterruptedException e) {
+//                            return;
+//                        }
+//                    }
+//                }
+//                LogUtil.print("线程休眠");
+//                try {
+//                    Thread.sleep(mMissionData.propDelay);
+//                } catch (InterruptedException e) {
+//                    return;
+//                }
+//                if (!isNeed || mPropOffsetHelper == null) {
+//                    return;
+//                }
+//                mPropOffsetHelper.addProp();
+//            }
+//        });
+    }
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
@@ -229,5 +316,146 @@ public class PigstyMode extends SurfaceView implements SurfaceHolder.Callback,Ru
 
     public interface OnExitedListener {
         void onExited();
+    }
+
+    public void setCurrentLevel(int currentLevel) {
+        mCurrentLevel = currentLevel;
+        if (mCurrentLevel > LevelUtil.PIGSTY_MODE_MAX_LEVEL) {
+            mCurrentLevel = -1;
+        }
+        mMissionData = LevelUtil.getMissionData(currentLevel);
+        showMissionDialog();
+    }
+
+    /**
+     * 任务对话框
+     */
+    private void showMissionDialog() {
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_pigsty_mode_mission_view, null, false);
+        OnClickListener onClickListener = v -> {
+            switch (v.getId()) {
+                case R.id.start_button:
+                    mMissionDialog.dismiss();
+                    isMissionDialogShown = true;
+                    PigApplication.savePigstyModeCurrentValidHeartCount(getContext(), PigApplication.getPigstyModeCurrentValidHeartCount(getContext()) - 1);
+                    restart();
+                    break;
+                case R.id.menu_button:
+                    ((MainActivity) getContext()).backToHome();
+                    break;
+                default:
+                    break;
+            }
+        };
+        ((TextView) dialogView.findViewById(R.id.message)).setText(mMissionData.toString(getContext(), mCurrentLevel));
+        dialogView.findViewById(R.id.start_button).setOnClickListener(onClickListener);
+        dialogView.findViewById(R.id.menu_button).setOnClickListener(onClickListener);
+        mMissionDialog = new AlertDialog.Builder(getContext(), R.style.DialogTheme).setView(dialogView).setCancelable(false).show();
+    }
+    public void exit(OnExitedListener listener) {
+        showExitDialog(listener);
+    }
+
+    private void showExitDialog(OnExitedListener listener) {
+        if (mGameResultDialog != null && mGameResultDialog.isShowing()) {
+            mGameResultDialog.dismiss();
+            exitNow();
+            listener.onExited();
+        } else if (mMissionDialog != null && mMissionDialog.isShowing()) {
+            mMissionDialog.dismiss();
+            exitNow();
+            listener.onExited();
+        } else if (mHeartEmptyDialog != null && mHeartEmptyDialog.isShowing()) {
+            mHeartEmptyDialog.dismiss();
+            exitNow();
+            listener.onExited();
+        } else {
+            if (mExitDialog == null) {
+                initExitDialog(listener);
+            }
+            if (!mExitDialog.isShowing()) {
+                mExitDialog.show();
+            }
+        }
+    }
+
+    public void exitNow() {
+        //触发surfaceDestroyed
+        setVisibility(GONE);
+        release();
+    }
+
+    private void initExitDialog(OnExitedListener listener) {
+        OnClickListener onClickListener = v -> {
+            switch (v.getId()) {
+                case R.id.continue_game_btn:
+                    mExitDialog.dismiss();
+                    break;
+                case R.id.back_to_menu_btn:
+                    mExitDialog.dismiss();
+                    exitNow();
+                    listener.onExited();
+                    break;
+                default:
+                    break;
+            }
+        };
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_exit_view, null, false);
+        dialogView.findViewById(R.id.continue_game_btn).setOnClickListener(onClickListener);
+        dialogView.findViewById(R.id.back_to_menu_btn).setOnClickListener(onClickListener);
+        mExitDialog = new AlertDialog.Builder(getContext(), R.style.DialogTheme).setView(dialogView).create();
+    }
+
+    public void release() {
+        if (mPiggies != null) {
+            for (Pig pig : mPiggies) {
+                if (pig != null) {
+//                    pig.release();
+                }
+            }
+            mPiggies = null;
+        }
+        if (mComputePathTasks != null) {
+            for (Future task : mComputePathTasks) {
+                if (task != null) {
+                    task.cancel(true);
+                }
+            }
+            mComputePathTasks = null;
+        }
+        if (mCarBody != null) {
+            mCarBody.release();
+            mCarBody = null;
+        }
+        if (mCarHead != null) {
+            mCarHead.release();
+            mCarHead = null;
+        }
+        if (mFrameBackgroundBitmap != null) {
+            if (!mFrameBackgroundBitmap.isRecycled()) {
+                mFrameBackgroundBitmap.recycle();
+            }
+            mFrameBackgroundBitmap = null;
+        }
+        mCaughtPiggies = null;
+        mCaughtPiggiesPosition = null;
+        mPaint = null;
+        mCarriageIsOccupied = null;
+        mFrameBackground = null;
+//        if (mPropOffsetHelper != null) {
+//            mPropOffsetHelper.release();
+//            mPropOffsetHelper = null;
+//        }
+        mSurfaceHolder = null;
+        mItems = null;
+        mItemStatus = null;
+//        mDraggingProps = null;
+        mDraggingPiggies = null;
+        mDraggingPropIds = null;
+        mDraggingPiggyIds = null;
+        mPiggiesOccupiedPosition = null;
+        mMissionDialog = null;
+        mGameResultDialog = null;
+        mExitDialog = null;
     }
 }

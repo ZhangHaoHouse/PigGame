@@ -12,6 +12,7 @@ import com.cloudmanx.piggame.customize.views.ClassicModeView;
 import com.cloudmanx.piggame.customize.views.HomeView;
 import com.cloudmanx.piggame.customize.views.LevelSelectView;
 import com.cloudmanx.piggame.customize.views.LoadingView;
+import com.cloudmanx.piggame.customize.views.PigstyMode;
 import com.cloudmanx.piggame.utils.LevelUtil;
 import com.cloudmanx.piggame.utils.ThreadPool;
 
@@ -29,7 +30,7 @@ public class MainActivity extends BaseActivity {
     private LoadingView mLoadingView;
     LevelSelectView mLevelSelectView;
     private ClassicModeView mClassicMode;
-
+    private PigstyMode mPigstyMode;
     private AlertDialog mExitDialog;
     private MediaPlayer mPlayer;
 
@@ -121,7 +122,7 @@ public class MainActivity extends BaseActivity {
                 mLevelSelectView = new LevelSelectView(this);
                 mLevelSelectView.setMaxLevelCount(LevelUtil.PIGSTY_MODE_MAX_LEVEL + 1);
                 mLevelSelectView.setValidHeartCount(PigApplication.getPigstyModeCurrentValidHeartCount(this));
-                mLevelSelectView.setValidLevelCount(PigApplication.getCurrentClassicModeLevel(this));
+                mLevelSelectView.setValidLevelCount(PigApplication.getCurrentPigstyModeLevel(this));
                 mLevelSelectView.setOnLevelSelectedListener(this::startFixPigstyMode);
                 mRootView.addView(mLevelSelectView,0);
             });
@@ -163,9 +164,9 @@ public class MainActivity extends BaseActivity {
                     mLevelSelectView = null;
                 }
                 mCurrentStatus = PIGSTY;
-//                mPigstyMode = new PigstyMode(this);
-//                mPigstyMode.setCurrentLevel(level > LevelUtil.PIGSTY_MODE_MAX_LEVEL ? -1 : level);
-//                mRootView.addView(mPigstyMode, 0);
+                mPigstyMode = new PigstyMode(this);
+                mPigstyMode.setCurrentLevel(level > LevelUtil.PIGSTY_MODE_MAX_LEVEL ? -1 : level);
+                mRootView.addView(mPigstyMode, 0);
             });
         }
     }
@@ -207,12 +208,12 @@ public class MainActivity extends BaseActivity {
                     });
                 }
                 break;
-//            case PIGSTY:
-//                mPigstyMode.exit(() -> mLoadingView.startLoad(() -> {
-//                    mRootView.removeView(mPigstyMode);
-//                    resetHomeState();
-//                }));
-//                break;
+            case PIGSTY:
+                mPigstyMode.exit(() -> mLoadingView.startLoad(() -> {
+                    mRootView.removeView(mPigstyMode);
+                    resetHomeState();
+                }));
+                break;
             case CLASSIC:
                 mClassicMode.exit(() -> mLoadingView.startLoad(() -> {
                     mRootView.removeView(mClassicMode);

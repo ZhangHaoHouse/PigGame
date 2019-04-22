@@ -36,7 +36,7 @@ public class ThreadPool {
         }
     }
 
-    public Future<?> excute(Runnable command){
+    public Future<?> execute(Runnable command){
         return mExecutorService.submit(command);
     }
 
