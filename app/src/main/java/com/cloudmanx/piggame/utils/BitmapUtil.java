@@ -43,6 +43,17 @@ public class BitmapUtil {
         return temp;
     }
 
+    /**
+     * 缩放Bitmap
+     */
+    public static Bitmap scaleBitmap(Bitmap target, int w, int h) {
+        int width = target.getWidth();
+        int height = target.getHeight();
+        Matrix matrix = new Matrix();
+        matrix.postScale(((float) w / width), ((float) h / height));
+        return Bitmap.createBitmap(target, 0, 0, width, height, matrix, true);
+    }
+
     public static BitmapDrawable scaleDrawable(BitmapDrawable drawable,int w,int h){
         Bitmap oldBitmap = drawable.getBitmap();
         int width = oldBitmap.getWidth();
